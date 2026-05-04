@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Yardi Project Setup Agent</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/docx/9.0.2/docx.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,-apple-system,sans-serif;font-size:13px}
+body{background:#f0f2f5;min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding:20px}
+.app{width:100%;max-width:960px;background:#fff;border-radius:12px;border:1px solid #e0e0e0;overflow:hidden;min-height:600px;display:flex;flex-direction:column}
+.top{background:#185FA5;color:#fff;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;min-height:54px}
+.top-left{display:flex;align-items:center;gap:14px}
+.top-divider{width:1px;height:28px;background:rgba(255,255,255,.3)}
+.top h1{font-size:13px;font-weight:500;letter-spacing:-.01em;opacity:.95}
+.top span{font-size:11px;opacity:.8;background:rgba(255,255,255,.15);padding:3px 10px;border-radius:20px}
+.body{display:flex;flex:1}
+.nav{width:190px;background:#f8f8f8;border-right:1px solid #e8e8e8;padding:14px 10px;flex-shrink:0}
+.ni{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:7px;cursor:pointer;margin-bottom:2px;transition:background .1s}
+.ni:hover{background:#ececec}
+.ni.act{background:#dbeafe}
+.ni.done{background:#dcfce7}
+.nd{width:20px;height:20px;border-radius:50%;background:#ccc;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;flex-shrink:0;transition:background .2s}
+.ni.act .nd{background:#185FA5}
+.ni.done .nd{background:#16a34a}
+.nl{font-size:11px;color:#666;line-height:1.3}
+.ni.act .nl{color:#185FA5;font-weight:600}
+.ni.done .nl{color:#16a34a}
+.main{flex:1;overflow-y:auto;padding:20px 22px;max-height:calc(100vh - 120px)}
+.pt{font-size:17px;font-weight:600;color:#111;margin-bottom:3px}
+.ps{font-size:12px;color:#888;margin-bottom:18px}
+.card{background:#fff;border:1px solid #e8e8e8;border-radius:9px;padding:15px 17px;margin-bottom:13px}
+.ct{font-size:12px;font-weight:600;color:#333;margin-bottom:10px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.lbl{font-size:11px;color:#555;margin-bottom:3px;display:block;font-weight:500}
+input,select,textarea{width:100%;border:1px solid #ddd;border-radius:6px;padding:7px 9px;font-size:12px;color:#222;background:#fff;outline:none;font-family:inherit;transition:border-color .15s}
+input:focus,select:focus,textarea:focus{border-color:#185FA5;box-shadow:0 0 0 2px rgba(24,95,165,.1)}
+textarea{resize:vertical;min-height:54px;line-height:1.5}
+.full{grid-column:1/-1}
+.mods{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.mo{border:1px solid #ddd;border-radius:8px;padding:10px 12px;cursor:pointer;display:flex;gap:9px;transition:all .15s}
+.mo:hover{border-color:#93c5fd}
+.mo.on{border-color:#185FA5;background:#eff6ff}
+.mc{width:15px;height:15px;border-radius:3px;background:#ccc;flex-shrink:0;margin-top:2px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;transition:background .15s}
+.mo.on .mc{background:#185FA5}
+.mn{font-size:12px;font-weight:600;color:#222}
+.md{font-size:11px;color:#888;margin-top:2px}
+.dbs{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
+.db{font-size:11px;padding:3px 10px;border-radius:20px;cursor:pointer;font-weight:500;user-select:none;transition:all .15s}
+.db.on{background:#185FA5;color:#fff}
+.db.off{background:#dbeafe;color:#1e40af;border:1px solid #bfdbfe}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:8px 16px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;border:none;font-family:inherit;transition:all .15s}
+.bp{background:#185FA5;color:#fff}
+.bp:hover{background:#1249821}
+.bp:disabled{opacity:.5;cursor:not-allowed}
+.bs{background:#f3f4f6;color:#374151;border:1px solid #d1d5db}
+.bs:hover{background:#e5e7eb}
+.bg{background:#16a34a;color:#fff}
+.bg:hover{background:#15803d}
+.brow{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
+.ob{background:#f9fafb;border:1px solid #e5e7eb;border-radius:7px;padding:11px;font-size:11px;line-height:1.7;white-space:pre-wrap;max-height:220px;overflow-y:auto;margin-top:8px;color:#374151;font-family:ui-monospace,monospace}
+.oh{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
+.ot{font-size:12px;font-weight:600;color:#111}
+.hint{font-size:11px;color:#065f46;background:#d1fae5;border-radius:5px;padding:5px 9px;margin-top:6px}
+.info{font-size:11px;color:#1e40af;background:#dbeafe;border-radius:6px;padding:7px 11px;margin-bottom:11px}
+.tbr{display:flex;gap:0;border-bottom:1px solid #e5e7eb;margin-bottom:13px}
+.tb{padding:7px 12px;font-size:12px;cursor:pointer;background:none;border:none;border-bottom:2px solid transparent;color:#6b7280;font-weight:500;font-family:inherit;margin-bottom:-1px;transition:all .15s}
+.tb:hover{color:#185FA5}
+.tb.on{color:#185FA5;border-bottom-color:#185FA5}
+.tr{display:flex;gap:6px;margin-bottom:6px}
+.tr input{flex:1}
+.rm{width:28px;height:30px;border:1px solid #ddd;border-radius:6px;background:#fff;cursor:pointer;color:#9ca3af;font-size:12px;transition:all .15s}
+.rm:hover{background:#fee2e2;border-color:#fca5a5;color:#dc2626}
+.al{font-size:11px;color:#185FA5;background:none;border:none;cursor:pointer;padding:3px 0;font-family:inherit}
+.rg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:15px}
+.sc{background:#f3f4f6;border-radius:8px;padding:11px}
+.sl{font-size:10px;color:#6b7280;margin-bottom:3px;font-weight:500;text-transform:uppercase;letter-spacing:.05em}
+.sv{font-size:16px;font-weight:700;color:#111}
+.dg{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.dc{border:1px solid #e5e7eb;border-radius:8px;padding:12px}
+.dh{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
+.dn{font-size:12px;font-weight:600;color:#111}
+.dd{font-size:11px;color:#6b7280;margin-bottom:8px}
+.bk{font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px}
+.bok{background:#dcfce7;color:#166534}
+.bpn{background:#fef3c7;color:#92400e}
+hr.div{border:none;border-top:1px solid #e8e8e8;margin:11px 0}
+.spin{display:inline-block;width:12px;height:12px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <div class="top-left">
+      <img src="https://www.yardi.com/wp-content/client-mu-plugins/cmw-icons/svg/logos/yardi_logo.svg" alt="Yardi" height="28" style="filter:brightness(0) invert(1);display:block">
+      <div class="top-divider"></div>
+      <h1>Project Setup Agent</h1>
+    </div>
+    <span id="pill">No project loaded</span>
+  </div>
+  <div class="body">
+    <div class="nav" id="nav"></div>
+    <div class="main" id="main"></div>
+  </div>
+</div>
+
+<script>
+// ── CONFIG: paste your Anthropic API key here ─────────────────────────────
+var API_KEY = "PASTE_YOUR_API_KEY_HERE";
+// ─────────────────────────────────────────────────────────────────────────────
+
+var STEPS=["Project & Modules","Cloud Email","BPR Agenda","BPR Documents","RFI Sheet","Review & Export"];
+var MODS=[
+  {id:"vc", name:"Vendor Cafe",        desc:"Vendor onboarding & portal"},
+  {id:"p2p",name:"Procure to Pay",     desc:"PR/PO, invoices, payments"},
+  {id:"fa", name:"Fixed Asset Manager",desc:"Assets & depreciation"},
+  {id:"fm", name:"Facility Manager",   desc:"Work orders, PPM, inspections"},
+];
+var DBS=["Live","Test","UAT","Training","DM Test","CommCafe"];
+var BPR={
+  vc: {label:"Vendor Cafe BPR",      sec:"Vendor Master, Vendor Markets, Categories, Approval Workflows, Portal Config, Email Templates, TRN, EFT Format"},
+  p2p:{label:"Procure to Pay BPR",   sec:"PR/PO Process, GRN, Invoice Management, Payment Processing, Petty Cash, Credit Notes, Service Contracts"},
+  fa: {label:"Fixed Assets BPR",     sec:"Asset Groups & Types, Depreciation Methods, Asset Creation, Transactions (purchase/transfer/disposal/impairment), Warranty"},
+  fm: {label:"Facility Manager BPR", sec:"Maintenance Models, Work Order Lifecycle, Team Structure, Inspection Types, PPM Setup, SLA/KPI"},
+};
+var RFI={
+  vc: [["Vendor Markets","Critical"],["Vendor Categories & Insurance Types","Critical"],["Vendor Workflow / Approval DOA","Critical"],["Mandatory Documents for Registration","High"],["Vendor User Defined Fields","High"],["Vendor Agreement","High"],["Vendor Cafe Configurations","Medium"],["VC Email Templates","Medium"],["Support Numbers / Email","Medium"],["EFT Format","Medium"]],
+  p2p:[["List of Expense Types","Critical"],["PR & PO Approval Workflow","Critical"],["PO Attachment Types","Critical"],["Invoice Approval DOA","High"],["Invoice Attachment Types","High"],["Direct Payable Attachment Types","High"],["Fields for EFT on Bank Record","Medium"],["Invoice Payment Methods","Medium"],["Payments Approval DOA","Medium"],["Payment Attachment Types","Medium"],["PO User Defined Fields","Medium"],["Service Contract DoA","Medium"],["Service Contract Business Types","Medium"],["Service Contract Attachments","Medium"]],
+  fa: [["Asset Groups","Critical"],["Asset Types","Critical"],["Asset Depreciation Groups","Critical"],["Fixed Asset Attachments","High"],["Asset Process Details","High"]],
+  fm: [["Maintenance Models","Critical"],["Team Structure & Roles","Critical"],["Employee Time Slots","Critical"],["WO Priority Setup","High"],["WO Status & Change Reasons","High"],["WO Categories & Subcategories","High"],["WO Attachments","Medium"],["WO SLA & Due Date Defaults","Medium"],["Employee Skills","Medium"],["WO Roles & Workflow","Medium"],["WO Config Points","Medium"],["Inspection Process","Medium"],["Inspection Statuses","Medium"],["PM Process","Medium"],["PM Statuses","Medium"],["PPM Config Points","Medium"],["Auto Assignment Rules","Medium"]],
+};
+
+var step=0,doneS=new Set(),loading={},texts={};
+var aMods=new Set(["vc","p2p","fa","fm"]),aDbs=new Set(DBS);
+var bTab="vc",bCtx={},tRows=["",""];
+var F={name:"",pin:"",tz:"",srcDB:"",liveWS:"",testWS:"",consultant:"",sm:"Yes",pi:"",
+       to:"Nereah.Abwao@Yardi.Com",cc:"",cnotes:"",bFrom:"",bUntil:"",sTime:"10:00 AM",sDur:"3",
+       focal:"",dl:"",rnotes:""};
+
+function client(){return F.name||"[Client Name]";}
+function selMods(){return MODS.filter(function(m){return aMods.has(m.id);});}
+function todayStr(){return new Date().toLocaleDateString("en-GB",{day:"2-digit",month:"long",year:"numeric"});}
+function esc(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+function go(n){step=n;render();}
+function setF(k,v){F[k]=v;renderPill();}
+function toggleMod(id){if(aMods.has(id))aMods.delete(id);else aMods.add(id);render();}
+function toggleDb(db){if(aDbs.has(db))aDbs.delete(db);else aDbs.add(db);render();}
+function addTeam(){tRows.push("");render();}
+function rmTeam(i){if(tRows.length>1){tRows.splice(i,1);render();}}
+function setBTab(id){bTab=id;render();}
+
+function renderPill(){
+  var el=document.getElementById("pill");
+  if(el)el.textContent=F.name?F.name+" \u2014 "+selMods().length+" modules":"No project loaded";
+}
+
+async function callClaude(sys,usr){
+  if(!API_KEY||API_KEY==="PASTE_YOUR_API_KEY_HERE"){
+    throw new Error("API key not set. Open the HTML file in a text editor and paste your Anthropic API key where it says PASTE_YOUR_API_KEY_HERE");
+  }
+  var r=await fetch("https://api.anthropic.com/v1/messages",{
+    method:"POST",
+    headers:{"Content-Type":"application/json","x-api-key":API_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+    body:JSON.stringify({model:"claude-opus-4-6",max_tokens:1200,system:sys,messages:[{role:"user",content:usr}]})
+  });
+  var d=await r.json();
+  if(d.content&&d.content[0]&&d.content[0].text)return d.content[0].text;
+  throw new Error((d.error&&d.error.message)||"API error — check your API key");
+}
+
+async function gen(key,sn,sys,usr){
+  loading[key]=true;render();
+  try{var t=await callClaude(sys,usr);texts[key]=t;doneS.add(sn);}
+  catch(e){texts[key]="Error: "+e.message;}
+  loading[key]=false;render();
+}
+
+function render(){
+  renderPill();
+  var nav=document.getElementById("nav");
+  nav.innerHTML=STEPS.map(function(s,i){
+    var cls="ni"+(step===i?" act":"")+(doneS.has(i)?" done":"");
+    return'<div class="'+cls+'" onclick="go('+i+')">'
+      +'<div class="nd">'+(doneS.has(i)?"&#10003;":i+1)+'</div>'
+      +'<div class="nl">'+s+'</div></div>';
+  }).join("");
+  var panels=[p1,p2,p3,p4,p5,p6];
+  document.getElementById("main").innerHTML=panels[step]();
+}
+
+function fld(label,key,placeholder,type,extra){
+  var val=F[key]||"";
+  var full=(extra&&extra.full)?"full":"";
+  if(type==="select"){
+    var opts=(extra.opts||[]).map(function(o){return'<option'+(val===o?' selected':'')+'>'+o+'</option>';}).join("");
+    return'<div class="'+full+'"><label class="lbl">'+label+'</label><select onchange="setF(\''+key+'\',this.value)">'+opts+'</select></div>';
+  }
+  if(type==="textarea"){
+    return'<div class="'+full+'"><label class="lbl">'+label+'</label><textarea onchange="setF(\''+key+'\',this.value)" placeholder="'+placeholder+'">'+esc(val)+'</textarea></div>';
+  }
+  return'<div class="'+full+'"><label class="lbl">'+label+'</label><input type="'+(type||"text")+'" value="'+esc(val)+'" oninput="setF(\''+key+'\',this.value)" placeholder="'+placeholder+'"></div>';
+}
+
+function outB(key,title,fname,isXls){
+  var txt=texts[key];if(!txt)return"";
+  var dlk=key+"_dl";
+  var isErr=txt.startsWith("Error:");
+  return'<div style="margin-top:11px">'
+    +'<div class="oh"><span class="ot">'+title+'</span>'
+    +(isErr?'':'<div style="display:flex;gap:5px">'
+      +'<button class="btn bs" style="font-size:11px;padding:5px 10px" onclick="navigator.clipboard.writeText(texts[\''+key+'\']).then(function(){alert(\'Copied!\')})">Copy text</button>'
+      +(isXls
+        ?'<button class="btn bg" style="font-size:11px;padding:5px 10px" onclick="dlXls()">&#8595; Download .xlsx</button>'
+        :'<button class="btn bg" style="font-size:11px;padding:5px 10px" '+(loading[dlk]?'disabled':'')+' onclick="dlDocx(\''+key+'\',\''+fname+'\')">'+(loading[dlk]?'<span class="spin"></span> Building...':'&#8595; Download .docx')+'</button>')
+      +'</div>')
+    +'</div>'
+    +'<div class="ob" style="'+(isErr?'color:#dc2626;background:#fef2f2':'')+'">'+(isErr?esc(txt):'&#9989; Generated &mdash; preview below\n\n'+esc(txt.substring(0,600))+(txt.length>600?'\n\n... (download to see full document)':''))+'</div>'
+    +(isErr?'':'<div class="hint">&#8595; Click Download to get the formatted file</div>')
+    +'</div>';
+}
+
+function p1(){
+  var modH=MODS.map(function(m){
+    var on=aMods.has(m.id);
+    return'<div class="mo'+(on?' on':'')+'" onclick="toggleMod(\''+m.id+'\')">'
+      +'<div class="mc">'+(on?'&#10003;':'')+'</div>'
+      +'<div><div class="mn">'+m.name+'</div><div class="md">'+m.desc+'</div></div></div>';
+  }).join("");
+  var dbH=DBS.map(function(db){
+    return'<span class="db '+(aDbs.has(db)?'on':'off')+'" onclick="toggleDb(\''+db+'\')">'+db+'</span>';
+  }).join("");
+  return'<div><div class="pt">Project details &amp; module selection</div>'
+    +'<div class="ps">Fill in client information and select the modules in scope.</div>'
+    +'<div class="card"><div class="ct">Client information</div><div class="g2">'
+    +fld("Client name *","name","e.g. Naufar")
+    +fld("Client PIN *","pin","e.g. 100052729")
+    +fld("Time zone","tz","","select",{opts:["","UAE (GST +4)","Qatar (AST +3)","KSA (AST +3)","Kuwait (+3)","Bahrain (+3)","Oman (+4)"]})
+    +fld("Source DB for restore","srcDB","e.g. zehqlfppi_resglive (pin:100091298)")
+    +fld("Live webshare URL","liveWS","e.g. https://live.yardi.com/client")
+    +fld("Test webshare URL","testWS","e.g. https://test.yardi.com/client")
+    +fld("Consultant name(s)","consultant","e.g. Anas Takala, Rajat Agarwal","text",{full:true})
+    +fld("Service Manager","sm","","select",{opts:["Yes","No"]})
+    +fld("PI list notes","pi","e.g. As per attached list")
+    +'</div><hr class="div"><div class="lbl">Databases to create (click to toggle)</div>'
+    +'<div class="dbs">'+dbH+'</div></div>'
+    +'<div class="card"><div class="ct">Module selection (click to toggle)</div>'
+    +'<div class="mods">'+modH+'</div></div>'
+    +'<button class="btn bp" onclick="go(1)">Continue to cloud email &rarr;</button></div>';
+}
+
+function p2(){
+  var key="email";var ld=loading[key];
+  return'<div><div class="pt">Cloud environment setup email</div>'
+    +'<div class="ps">Generates a ready-to-send email + downloadable Word document.</div>'
+    +'<div class="card"><div class="ct">Recipients</div><div class="g2">'
+    +fld("To (cloud team)","to","Nereah.Abwao@Yardi.Com")
+    +fld("CC (project team)","cc","Rajat.Agarwal@Yardi.Com, ...")
+    +fld("Special notes","cnotes","e.g. DBs to be copy of AIM GOLD DB.","textarea",{full:true})
+    +'</div></div>'
+    +'<button class="btn bp" '+(ld?'disabled':'')+' onclick="runEmail()">'
+    +(ld?'<span class="spin"></span>&nbsp;Generating...':'Generate email')+'</button>'
+    +outB(key,"Cloud environment email","Cloud_Setup_Email_"+client()+".docx",false)
+    +'<div class="brow"><button class="btn bs" onclick="go(0)">&larr; Back</button>'
+    +'<button class="btn bp" onclick="go(2)">Continue &rarr;</button></div></div>';
+}
+
+function p3(){
+  var key="agenda";var ld=loading[key];
+  var rowH=tRows.map(function(r,i){
+    return'<div class="tr"><input value="'+esc(r)+'" oninput="tRows['+i+']=this.value" placeholder="Name &mdash; Role (e.g. Anas Takala &mdash; Business Consultant)">'
+      +'<button class="rm" onclick="rmTeam('+i+')">&#10005;</button></div>';
+  }).join("");
+  return'<div><div class="pt">BPR session agenda</div>'
+    +'<div class="ps">Generates a day-by-day session schedule + downloadable Word document.</div>'
+    +'<div class="card"><div class="ct">Session schedule</div><div class="g2">'
+    +fld("Start date","bFrom","","date")
+    +fld("End date","bUntil","","date")
+    +fld("Daily start time","sTime","10:00 AM")
+    +fld("Hours per session","sDur","3")
+    +'</div></div>'
+    +'<div class="card"><div class="ct">Yardi team members</div>'+rowH
+    +'<button class="al" onclick="addTeam()">+ Add member</button></div>'
+    +'<button class="btn bp" '+(ld?'disabled':'')+' onclick="runAgenda()">'
+    +(ld?'<span class="spin"></span>&nbsp;Generating...':'Generate agenda')+'</button>'
+    +outB(key,"BPR session agenda","BPR_Agenda_"+client()+".docx",false)
+    +'<div class="brow"><button class="btn bs" onclick="go(1)">&larr; Back</button>'
+    +'<button class="btn bp" onclick="go(3)">Continue &rarr;</button></div></div>';
+}
+
+function p4(){
+  var tabs=selMods().filter(function(m){return BPR[m.id];});
+  var tabH=tabs.map(function(m){return'<button class="tb'+(bTab===m.id?' on':'')+'" onclick="setBTab(\''+m.id+'\')">'+BPR[m.id].label+'</button>';}).join("");
+  var cur=tabs.find(function(m){return m.id===bTab;});
+  var key="bpr_"+bTab;var ld=loading[key];
+  var body=cur?'<div class="card"><div class="ct">'+BPR[bTab].label+'</div>'
+    +'<div style="margin-bottom:10px"><label class="lbl">Client-specific context (optional)</label>'
+    +'<textarea oninput="bCtx[\''+bTab+'\']=this.value" placeholder="Add any specific requirements or custom notes for this module...">'+(bCtx[bTab]||"")+'</textarea></div>'
+    +'<button class="btn bp" '+(ld?'disabled':'')+' onclick="runBpr(\''+bTab+'\')">'
+    +(ld?'<span class="spin"></span>&nbsp;Generating...':'Generate '+BPR[bTab].label)+'</button></div>'
+    +outB(key,BPR[bTab].label,"BPR_"+bTab+"_"+client()+".docx",false)
+    :'<div class="info">No modules selected. Go back to Step 1.</div>';
+  return'<div><div class="pt">BPR documents</div>'
+    +'<div class="ps">One Word document per module — with version table, requirements, branded header &amp; footer.</div>'
+    +'<div class="info">Generate each tab individually, then click Download .docx for each one.</div>'
+    +'<div class="tbr">'+tabH+'</div>'+body
+    +'<div class="brow"><button class="btn bs" onclick="go(2)">&larr; Back</button>'
+    +'<button class="btn bp" onclick="go(4)">Continue &rarr;</button></div></div>';
+}
+
+function p5(){
+  var key="rfi";var ld=loading[key];
+  return'<div><div class="pt">RFI collection sheet</div>'
+    +'<div class="ps">Downloads as Excel with Cover page, Index, and one tab per module — colour-coded by priority.</div>'
+    +'<div class="card"><div class="ct">Configuration</div><div class="g2">'
+    +fld("Project focal point","focal","e.g. John Smith")
+    +fld("Target completion date","dl","","date")
+    +fld("Instructions for client","rnotes","e.g. Please fill Critical items before first BPR session.","textarea",{full:true})
+    +'</div></div>'
+    +'<div class="brow">'
+    +'<button class="btn bp" '+(ld?'disabled':'')+' onclick="runRfi()">'+(ld?'<span class="spin"></span>&nbsp;Generating...':'Generate RFI index')+'</button>'
+    +(texts[key]&&!texts[key].startsWith("Error:")?'<button class="btn bg" onclick="dlXls()">&#8595; Download .xlsx</button>':'')
+    +'</div>'
+    +outB(key,"RFI collection index","RFI_"+client()+".xlsx",true)
+    +'<div class="brow"><button class="btn bs" onclick="go(3)">&larr; Back</button>'
+    +'<button class="btn bp" onclick="go(5)">Continue &rarr;</button></div></div>';
+}
+
+function p6(){
+  var delivs=[
+    {key:"email", label:"Cloud setup email",    step:1,xlsx:false,fname:"Cloud_Setup_Email_"+client()+".docx"},
+    {key:"agenda",label:"BPR session agenda",   step:2,xlsx:false,fname:"BPR_Agenda_"+client()+".docx"},
+  ];
+  selMods().filter(function(m){return BPR[m.id];}).forEach(function(m){
+    delivs.push({key:"bpr_"+m.id,label:BPR[m.id].label,step:3,xlsx:false,fname:"BPR_"+m.id+"_"+client()+".docx"});
+  });
+  delivs.push({key:"rfi",label:"RFI collection sheet",step:4,xlsx:true,fname:"RFI_"+client()+".xlsx"});
+  var rdy=delivs.filter(function(d){return texts[d.key]&&!texts[d.key].startsWith("Error:");}).length;
+  var stats='<div class="rg">'
+    +[["Client",client()],["Modules",selMods().length+" selected"],["Ready",rdy+" / "+delivs.length]].map(function(p){
+      return'<div class="sc"><div class="sl">'+p[0]+'</div><div class="sv">'+p[1]+'</div></div>';
+    }).join("")+'</div>';
+  var cards=delivs.map(function(d){
+    var ok=!!(texts[d.key]&&!texts[d.key].startsWith("Error:"));
+    return'<div class="dc"><div class="dh"><span class="dn">'+d.label+'</span>'
+      +'<span class="bk '+(ok?"bok":"bpn")+'">'+(ok?"Ready":"Pending")+'</span></div>'
+      +'<div class="dd">'+(ok?"Click to download.":"Go back and generate first.")+'</div>'
+      +(ok?'<div style="display:flex;gap:5px">'
+        +'<button class="btn bs" style="font-size:11px;padding:4px 10px" onclick="navigator.clipboard.writeText(texts[\''+d.key+'\']).then(function(){alert(\'Copied!\')})">Copy</button>'
+        +'<button class="btn bg" style="font-size:11px;padding:4px 10px" onclick="'+(d.xlsx?'dlXls()':'dlDocx(\''+d.key+'\',\''+d.fname+'\')')+'">.'+(d.xlsx?"xlsx":"docx")+'</button></div>'
+        :'<button class="btn bp" style="font-size:11px;padding:4px 10px" onclick="go('+d.step+')">Go to step '+(d.step+1)+'</button>')
+      +'</div>';
+  }).join("");
+  return'<div><div class="pt">Review &amp; export all deliverables</div>'
+    +'<div class="ps">All outputs for '+client()+'.</div>'
+    +stats+'<div class="dg">'+cards+'</div>'
+    +'<div class="brow"><button class="btn bs" onclick="go(4)">&larr; Back</button></div></div>';
+}
+
+function runEmail(){
+  gen("email",1,
+    "You are a Yardi Implementation Consultant writing a professional email to the cloud team. Plain text only, no markdown. Use dash bullet points.",
+    "Write a cloud environment readiness request email.\nTO: "+F.to+"\nCC: "+(F.cc||"[Project Team]")+"\nFROM: "+(F.consultant||"[Consultant]")+" | Yardi Consultant\nClient: "+client()+" | PIN: "+F.pin+"\nLive webshare: "+(F.liveWS||"TBD")+"\nTest webshare: "+(F.testWS||"TBD")+"\nDatabases: "+Array.from(aDbs).join(", ")+"\nTimezone: "+(F.tz||"TBD")+"\nSource DB: "+(F.srcDB||"To be confirmed")+"\nPIs: "+(F.pi||"As per standard list")+"\nService Manager: "+F.sm+(F.cnotes?"\nNotes: "+F.cnotes:"")+"\n\nWrite the full email with: Subject line (prefix Subject:), professional greeting, short intro, sections with dash bullet points for each detail, and a professional signature for "+(F.consultant||"[Consultant]")+"."
+  );
+}
+
+function runAgenda(){
+  var team=tRows.filter(function(r){return r.trim();}).join("; ")||"Yardi Implementation Team";
+  gen("agenda",2,
+    "You are a Yardi Implementation Consultant. Generate a BPR session agenda as a plain text table with columns separated by |.",
+    "BPR session agenda:\nClient: "+client()+"\nModules: "+selMods().map(function(m){return m.name;}).join(", ")+"\nDates: "+(F.bFrom||"TBD")+" to "+(F.bUntil||"TBD")+"\nDaily start: "+F.sTime+" | Hours/day: "+F.sDur+"\nTeam: "+team+"\n\nCreate a day-by-day table:\nDay & Date | Time | Hours | Business Topics | Suggested Attendees\n\nDay 1 = kickoff. Allocate days to modules. Final day = open items. Use real dates."
+  );
+}
+
+function runBpr(id){
+  var mod=MODS.find(function(m){return m.id===id;});
+  var pref=id.toUpperCase();
+  gen("bpr_"+id,3,
+    "You are a senior Yardi Implementation Consultant generating BPR documents. Plain text, structured. Use pipe-separated tables for requirements.",
+    "Generate BPR for "+mod.name+" — Client: "+client()+"\nSections: "+BPR[id].sec+"\n\nStructure:\n1. BPR DOCUMENT – "+mod.name.toUpperCase()+" – "+client().toUpperCase()+"\n2. Version Control: Version | Date | Author | Status (row: 1.0 | "+todayStr()+" | "+(F.consultant||"Yardi Consultant")+" | Draft)\n3. Overview: 2 sentences\n4. REQUIREMENTS TABLE: Ref | Topic | Requirement (12 rows, codes "+pref+"-001 etc., mark client items 'To be confirmed in RFI')\n5. Additional Requirements section\n6. RFI Items: Refer to RFI Collection Sheet on SharePoint.\n7. Copyright Yardi Systems Inc. "+new Date().getFullYear()+"."+(bCtx[id]?"\nContext: "+bCtx[id]:"")
+  );
+}
+
+function runRfi(){
+  var mods=selMods();
+  var items=mods.map(function(m){return m.name+":\n"+(RFI[m.id]||[]).map(function(r,i){return"  "+(i+1)+". "+r[0]+" ["+r[1]+"]";}).join("\n");}).join("\n\n");
+  gen("rfi",4,
+    "You are a Yardi Implementation Consultant generating an RFI index. Plain text table format.",
+    "RFI Sheet for: "+client()+"\nFocal: "+(F.focal||"Project Team")+" | Deadline: "+(F.dl||"TBD")+"\nModules: "+mods.map(function(m){return m.name;}).join(", ")+(F.rnotes?"\nInstructions: "+F.rnotes:"")+"\n\nItems:\n"+items+"\n\nGenerate numbered table:\nSr.No | Module | Requirement | Department | Priority | Target Date | Status\n\nAdd (ETL - Data Template Required) to data upload items. End with escalation note."
+  );
+}
+
+async function dlDocx(key,fname){
+  if(!texts[key]||texts[key].startsWith("Error:"))return;
+  loading[key+"_dl"]=true;render();
+  try{
+    var d=docx;
+    var BLUE="185FA5",GR="5F5E5A",DK="2C2C2A",WH="FFFFFF";
+    var bd={style:d.BorderStyle.SINGLE,size:1,color:"CCCCCC"};
+    var bds={top:bd,bottom:bd,left:bd,right:bd};
+    var hbd={style:d.BorderStyle.SINGLE,size:1,color:BLUE};
+    var hbds={top:hbd,bottom:hbd,left:hbd,right:hbd};
+    function mkCell(t,w,isH,shade){
+      return new d.TableCell({borders:isH?hbds:bds,width:{size:w,type:d.WidthType.DXA},
+        shading:{fill:isH?BLUE:(shade||WH),type:d.ShadingType.CLEAR},
+        margins:{top:80,bottom:80,left:120,right:120},
+        verticalAlign:d.VerticalAlign.CENTER,
+        children:[new d.Paragraph({children:[new d.TextRun({text:String(t||""),font:"Arial",size:20,bold:!!isH,color:isH?WH:DK})]})]});
+    }
+    var lines=texts[key].split("\n");
+    var children=[];
+    children.push(new d.Paragraph({alignment:d.AlignmentType.CENTER,spacing:{before:0,after:140},
+      children:[new d.TextRun({text:fname.replace(/_/g," ").replace(/\.docx$/,""),bold:true,font:"Arial",size:26,color:BLUE})]}));
+    children.push(new d.Paragraph({alignment:d.AlignmentType.CENTER,spacing:{before:0,after:80},
+      children:[new d.TextRun({text:client()+" | "+todayStr(),font:"Arial",size:20,color:GR})]}));
+    children.push(new d.Paragraph({border:{bottom:{style:d.BorderStyle.SINGLE,size:6,color:BLUE,space:1}},spacing:{before:80,after:80},children:[]}));
+    var tbuf=[];
+    function flushT(){
+      if(!tbuf.length)return;
+      var cols=tbuf.reduce(function(mx,r){return Math.max(mx,r.length);},0);
+      var cw=Math.floor(9360/Math.max(cols,1));
+      var cws=Array(cols).fill(cw);
+      children.push(new d.Table({width:{size:9360,type:d.WidthType.DXA},columnWidths:cws,
+        rows:tbuf.map(function(row,ri){
+          return new d.TableRow({tableHeader:ri===0,children:row.map(function(c,ci){return mkCell(c,cws[ci]||cw,ri===0,ri%2===1?"F5F5F5":null);})});
+        })}));
+      children.push(new d.Paragraph({spacing:{before:60,after:40},children:[]}));
+      tbuf=[];
+    }
+    for(var i=0;i<lines.length;i++){
+      var t=lines[i].trim();
+      if(t.indexOf("|")!==-1&&t.split("|").length>=3){
+        var cells=t.split("|").map(function(c){return c.trim();}).filter(function(c){return c&&!/^[-\s]+$/.test(c);});
+        if(cells.length>=2){tbuf.push(cells);continue;}
+      }else flushT();
+      if(!t){children.push(new d.Paragraph({spacing:{before:28,after:28},children:[]}));continue;}
+      var isH=/^[A-Z][A-Z\s&\/\-\.0-9]{3,}[:\.]?\s*$/.test(t)&&t.length<70&&t.indexOf("@")===-1&&t.indexOf("|")===-1;
+      var clean=t.replace(/^#+\s*/,"").replace(/\*\*/g,"");
+      children.push(new d.Paragraph({spacing:{before:isH?110:28,after:isH?44:28},
+        children:[new d.TextRun({text:clean,font:"Arial",size:isH?22:20,bold:isH,color:isH?BLUE:DK})]}));
+    }
+    flushT();
+    children.push(new d.Paragraph({spacing:{before:140,after:0},children:[]}));
+    children.push(new d.Paragraph({border:{top:{style:d.BorderStyle.SINGLE,size:4,color:BLUE,space:1}},alignment:d.AlignmentType.CENTER,spacing:{before:44,after:0},
+      children:[new d.TextRun({text:"\u00A9 "+new Date().getFullYear()+" Yardi Systems, Inc. All rights reserved. Confidential.",font:"Arial",size:16,color:GR})]}));
+    var doc=new d.Document({
+      styles:{default:{document:{run:{font:"Arial",size:22}}}},
+      sections:[{properties:{page:{size:{width:12240,height:15840},margin:{top:1440,right:1440,bottom:1440,left:1440}}},
+        headers:{default:new d.Header({children:[new d.Paragraph({alignment:d.AlignmentType.RIGHT,border:{bottom:{style:d.BorderStyle.SINGLE,size:4,color:BLUE,space:1}},children:[new d.TextRun({text:fname.replace(/_/g," ").replace(/\.docx$/,"")+" | "+client()+" | CONFIDENTIAL",font:"Arial",size:18,color:GR})]})]})} ,
+        footers:{default:new d.Footer({children:[new d.Paragraph({alignment:d.AlignmentType.CENTER,border:{top:{style:d.BorderStyle.SINGLE,size:4,color:BLUE,space:1}},children:[new d.TextRun({text:"Yardi Systems | Page ",font:"Arial",size:16,color:GR}),new d.TextRun({children:[d.PageNumber.CURRENT],font:"Arial",size:16,color:GR})]})]})} ,
+        children:children}]
+    });
+    var buf=await d.Packer.toBuffer(doc);
+    var blob=new Blob([buf],{type:"application/vnd.openxmlformats-officedocument.wordprocessingml.document"});
+    var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=fname;a.click();URL.revokeObjectURL(a.href);
+  }catch(e){alert("Error building .docx: "+e.message);}
+  loading[key+"_dl"]=false;render();
+}
+
+function dlXls(){
+  var XL=XLSX;
+  var mods=selMods();
+  var etlK=["template","list","master","schedule","asset","format","attachment"];
+  var wb=XL.utils.book_new();
+  var td=todayStr();
+  var cov=[["RFI COLLECTION SHEET",""],[""],[ client(),""],[""],["Prepared by:",F.consultant||"Yardi Consultant"],["Focal Point:",F.focal||"Project Team"],["Target Date:",F.dl||"TBD"],["Modules:",mods.map(function(m){return m.name;}).join(", ")],["Date:",td],[""],[  "Instructions:",F.rnotes||"Please complete all Critical items before the first BPR session."]];
+  var cWs=XL.utils.aoa_to_sheet(cov);
+  cWs["!cols"]=[{wch:28},{wch:55}];
+  XL.utils.book_append_sheet(wb,cWs,"Cover");
+  var iHdr=["Sr.No","Module","Requirement / Information Needed","Department","Priority","Target Date","Shared Date","Status","Remarks"];
+  var iRows=[iHdr];var sr=1;
+  mods.forEach(function(mod){
+    (RFI[mod.id]||[]).forEach(function(r){
+      var etl=etlK.some(function(k){return r[0].toLowerCase().indexOf(k)!==-1;})?" (ETL \u2013 Data Template Required)":"";
+      iRows.push([sr++,mod.name,r[0]+etl,"",r[1],F.dl||"TBD","","Pending",""]);
+    });
+  });
+  var iWs=XL.utils.aoa_to_sheet(iRows);
+  iWs["!cols"]=[{wch:7},{wch:22},{wch:48},{wch:18},{wch:12},{wch:14},{wch:14},{wch:14},{wch:24}];
+  XL.utils.book_append_sheet(wb,iWs,"Index");
+  mods.forEach(function(mod){
+    var hdr=["Sr.No","Requirement / Information Needed","Department","Priority","Target Date","Shared Date","Status","Remarks"];
+    var rows=[hdr];
+    (RFI[mod.id]||[]).forEach(function(r,i){
+      var etl=etlK.some(function(k){return r[0].toLowerCase().indexOf(k)!==-1;})?" (ETL \u2013 Data Template Required)":"";
+      rows.push([i+1,r[0]+etl,"",r[1],F.dl||"TBD","","Pending",""]);
+    });
+    var ws=XL.utils.aoa_to_sheet(rows);
+    ws["!cols"]=[{wch:7},{wch:50},{wch:18},{wch:12},{wch:14},{wch:14},{wch:14},{wch:24}];
+    XL.utils.book_append_sheet(wb,ws,mod.name.substring(0,28));
+  });
+  XL.writeFile(wb,"RFI_"+client().replace(/\s+/g,"_")+".xlsx");
+}
+
+render();
+</script>
+</body>
+</html>
