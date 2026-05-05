@@ -4,8 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Yardi Project Setup Agent</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/docx/9.0.2/docx.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,-apple-system,sans-serif;font-size:13px}
 body{background:#f0f2f5;min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding:20px}
@@ -222,9 +220,18 @@ function dlFile(buf,filename,mime){
 }
 
 // ── Generate BPR .docx ────────────────────────────────────────────────────────
+async function loadLibs(){
+  if(!window.docx){
+    await new Promise(function(res,rej){var s=document.createElement("script");s.src="https://cdnjs.cloudflare.com/ajax/libs/docx/9.0.2/docx.umd.min.js";s.onload=res;s.onerror=rej;document.head.appendChild(s);});
+  }
+  if(!window.XLSX){
+    await new Promise(function(res,rej){var s=document.createElement("script");s.src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";s.onload=res;s.onerror=rej;document.head.appendChild(s);});
+  }
+}
 async function genBpr(id){
   loading["bpr_"+id]=true;re();
   try{
+    await loadLibs();
     var c=cl();
     var rows=(TREQS[id]||[]).map(function(r){return[r[0],r[1],r[2].replace(/\{C\}/g,c)];});
     var buf=await buildDocx(TTITLES[id],TSUB[id],{overview:TOV[id].replace(/\{C\}/g,c),tables:[{title:TN[id],rows:rows}]});
@@ -238,6 +245,7 @@ async function genBpr(id){
 async function genEmail(){
   loading.email=true;re();
   try{
+    await loadLibs();
     var c=cl(),co=F.con||"Yardi Consultant",t=td();
     var emailRows=[
       ["TO",F.to||"Cloud Team"],["CC",F.cc||"[Project Team]"],["FROM",co+" | Yardi Consultant"],["DATE",t],
@@ -283,6 +291,7 @@ async function genEmail(){
 async function genAgenda(){
   loading.agenda=true;re();
   try{
+    await loadLibs();
     var c=cl(),co=F.con||"Yardi Consultant",t=td(),mods=sm();
     var team=tr.filter(Boolean).join(", ")||co;
     var sd=F.bf?new Date(F.bf):null;
@@ -326,9 +335,10 @@ async function genAgenda(){
 }
 
 // ── Generate RFI .xlsx ────────────────────────────────────────────────────────
-function genRfi(){
+async function genRfi(){
   loading.rfi=true;re();
   try{
+    await loadLibs();
     var c=cl(),co=F.con||"Yardi Consultant",t=td(),mods=sm();
     var rn=new Set();mods.forEach(function(m){(M2R[m.id]||[]).forEach(function(n){rn.add(n);});});
     var filt=RROWS.filter(function(r){return rn.has(r[1]);});
