@@ -9,491 +9,425 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,-apple-system,sans-serif;font-size:13px}
 body{background:#f0f2f5;min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding:20px}
-.app{width:100%;max-width:960px;background:#fff;border-radius:12px;border:1px solid #e0e0e0;overflow:hidden;min-height:600px;display:flex;flex-direction:column}
-.top{background:#185FA5;color:#fff;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;min-height:54px}
-.top-left{display:flex;align-items:center;gap:14px}
-.top-divider{width:1px;height:28px;background:rgba(255,255,255,.3)}
-.top h1{font-size:13px;font-weight:500;letter-spacing:-.01em;opacity:.95}
-.top span{font-size:11px;opacity:.8;background:rgba(255,255,255,.15);padding:3px 10px;border-radius:20px}
+.app{width:100%;max-width:980px;background:#fff;border-radius:12px;border:1px solid #e0e0e0;overflow:hidden;display:flex;flex-direction:column}
+.top{background:#185FA5;color:#fff;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;min-height:52px}
+.tl{display:flex;align-items:center;gap:12px}
+.tdiv{width:1px;height:24px;background:rgba(255,255,255,.3)}
+.top h1{font-size:13px;font-weight:500}
+.pill{font-size:11px;background:rgba(255,255,255,.15);padding:3px 10px;border-radius:20px}
 .body{display:flex;flex:1}
-.nav{width:190px;background:#f8f8f8;border-right:1px solid #e8e8e8;padding:14px 10px;flex-shrink:0}
-.ni{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:7px;cursor:pointer;margin-bottom:2px;transition:background .1s}
-.ni:hover{background:#ececec}
-.ni.act{background:#dbeafe}
-.ni.done{background:#dcfce7}
-.nd{width:20px;height:20px;border-radius:50%;background:#ccc;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;flex-shrink:0;transition:background .2s}
-.ni.act .nd{background:#185FA5}
-.ni.done .nd{background:#16a34a}
-.nl{font-size:11px;color:#666;line-height:1.3}
-.ni.act .nl{color:#185FA5;font-weight:600}
-.ni.done .nl{color:#16a34a}
-.main{flex:1;overflow-y:auto;padding:20px 22px;max-height:calc(100vh - 120px)}
+.nav{width:190px;background:#f8f8f8;border-right:1px solid #e8e8e8;padding:14px 10px;flex-shrink:0;min-height:600px}
+.ni{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:7px;cursor:pointer;margin-bottom:2px}
+.ni:hover{background:#ececec}.ni.act{background:#dbeafe}.ni.done{background:#dcfce7}
+.nd{width:20px;height:20px;border-radius:50%;background:#ccc;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;flex-shrink:0}
+.ni.act .nd{background:#185FA5}.ni.done .nd{background:#16a34a}
+.nl{font-size:11px;color:#666;line-height:1.3}.ni.act .nl{color:#185FA5;font-weight:600}.ni.done .nl{color:#16a34a}
+.main{flex:1;overflow-y:auto;padding:20px 24px;min-height:600px;max-height:90vh}
 .pt{font-size:17px;font-weight:600;color:#111;margin-bottom:3px}
-.ps{font-size:12px;color:#888;margin-bottom:18px}
-.card{background:#fff;border:1px solid #e8e8e8;border-radius:9px;padding:15px 17px;margin-bottom:13px}
+.ps{font-size:12px;color:#888;margin-bottom:16px}
+.card{border:1px solid #e8e8e8;border-radius:9px;padding:15px 17px;margin-bottom:12px;background:#fff}
 .ct{font-size:12px;font-weight:600;color:#333;margin-bottom:10px}
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .lbl{font-size:11px;color:#555;margin-bottom:3px;display:block;font-weight:500}
-input,select,textarea{width:100%;border:1px solid #ddd;border-radius:6px;padding:7px 9px;font-size:12px;color:#222;background:#fff;outline:none;font-family:inherit;transition:border-color .15s}
+input,select,textarea{width:100%;border:1px solid #ddd;border-radius:6px;padding:6px 9px;font-size:12px;color:#222;background:#fff;outline:none;font-family:inherit}
 input:focus,select:focus,textarea:focus{border-color:#185FA5;box-shadow:0 0 0 2px rgba(24,95,165,.1)}
-textarea{resize:vertical;min-height:54px;line-height:1.5}
+textarea{resize:vertical;min-height:52px;line-height:1.5}
 .full{grid-column:1/-1}
 .mods{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.mo{border:1px solid #ddd;border-radius:8px;padding:10px 12px;cursor:pointer;display:flex;gap:9px;transition:all .15s}
-.mo:hover{border-color:#93c5fd}
-.mo.on{border-color:#185FA5;background:#eff6ff}
-.mc{width:15px;height:15px;border-radius:3px;background:#ccc;flex-shrink:0;margin-top:2px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;transition:background .15s}
+.mo{border:1px solid #ddd;border-radius:8px;padding:10px 12px;cursor:pointer;display:flex;gap:9px}
+.mo:hover{border-color:#93c5fd}.mo.on{border-color:#185FA5;background:#eff6ff}
+.mc{width:15px;height:15px;border-radius:3px;background:#ccc;flex-shrink:0;margin-top:2px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff}
 .mo.on .mc{background:#185FA5}
-.mn{font-size:12px;font-weight:600;color:#222}
-.md{font-size:11px;color:#888;margin-top:2px}
-.dbs{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
-.db{font-size:11px;padding:3px 10px;border-radius:20px;cursor:pointer;font-weight:500;user-select:none;transition:all .15s}
-.db.on{background:#185FA5;color:#fff}
-.db.off{background:#dbeafe;color:#1e40af;border:1px solid #bfdbfe}
-.btn{display:inline-flex;align-items:center;gap:5px;padding:8px 16px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;border:none;font-family:inherit;transition:all .15s}
-.bp{background:#185FA5;color:#fff}
-.bp:hover{background:#1249821}
-.bp:disabled{opacity:.5;cursor:not-allowed}
-.bs{background:#f3f4f6;color:#374151;border:1px solid #d1d5db}
-.bs:hover{background:#e5e7eb}
-.bg{background:#16a34a;color:#fff}
-.bg:hover{background:#15803d}
-.brow{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
-.ob{background:#f9fafb;border:1px solid #e5e7eb;border-radius:7px;padding:11px;font-size:11px;line-height:1.7;white-space:pre-wrap;max-height:220px;overflow-y:auto;margin-top:8px;color:#374151;font-family:ui-monospace,monospace}
-.oh{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
-.ot{font-size:12px;font-weight:600;color:#111}
-.hint{font-size:11px;color:#065f46;background:#d1fae5;border-radius:5px;padding:5px 9px;margin-top:6px}
-.info{font-size:11px;color:#1e40af;background:#dbeafe;border-radius:6px;padding:7px 11px;margin-bottom:11px}
-.tbr{display:flex;gap:0;border-bottom:1px solid #e5e7eb;margin-bottom:13px}
-.tb{padding:7px 12px;font-size:12px;cursor:pointer;background:none;border:none;border-bottom:2px solid transparent;color:#6b7280;font-weight:500;font-family:inherit;margin-bottom:-1px;transition:all .15s}
-.tb:hover{color:#185FA5}
-.tb.on{color:#185FA5;border-bottom-color:#185FA5}
-.tr{display:flex;gap:6px;margin-bottom:6px}
-.tr input{flex:1}
-.rm{width:28px;height:30px;border:1px solid #ddd;border-radius:6px;background:#fff;cursor:pointer;color:#9ca3af;font-size:12px;transition:all .15s}
-.rm:hover{background:#fee2e2;border-color:#fca5a5;color:#dc2626}
+.mn{font-size:12px;font-weight:600;color:#222}.md{font-size:11px;color:#888;margin-top:2px}
+.dbs{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+.db{font-size:11px;padding:3px 10px;border-radius:20px;cursor:pointer;font-weight:500;user-select:none}
+.db.on{background:#185FA5;color:#fff}.db.off{background:#dbeafe;color:#1e40af;border:1px solid #bfdbfe}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;border:none;font-family:inherit;transition:opacity .15s}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.bp{background:#185FA5;color:#fff}.bs{background:#f3f4f6;color:#374151;border:1px solid #d1d5db}.bg{background:#16a34a;color:#fff}
+.brow{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;align-items:center}
+.info{font-size:11px;color:#1e40af;background:#dbeafe;border-radius:6px;padding:7px 10px;margin-bottom:10px}
+.tbr{display:flex;flex-wrap:wrap;border-bottom:1px solid #e5e7eb;margin-bottom:12px}
+.tb{padding:6px 12px;font-size:11px;cursor:pointer;background:none;border:none;border-bottom:2px solid transparent;color:#6b7280;font-weight:500;font-family:inherit;margin-bottom:-1px}
+.tb:hover{color:#185FA5}.tb.on{color:#185FA5;border-bottom-color:#185FA5}
+.tr{display:flex;gap:6px;margin-bottom:6px}.tr input{flex:1}
+.rm{width:28px;height:30px;border:1px solid #ddd;border-radius:5px;background:#fff;cursor:pointer;color:#9ca3af;font-size:11px}
 .al{font-size:11px;color:#185FA5;background:none;border:none;cursor:pointer;padding:3px 0;font-family:inherit}
-.rg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:15px}
-.sc{background:#f3f4f6;border-radius:8px;padding:11px}
-.sl{font-size:10px;color:#6b7280;margin-bottom:3px;font-weight:500;text-transform:uppercase;letter-spacing:.05em}
+.rg{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+.sc{background:#f3f4f6;border-radius:8px;padding:12px}
+.sl{font-size:10px;color:#6b7280;margin-bottom:3px;font-weight:500;text-transform:uppercase;letter-spacing:.04em}
 .sv{font-size:16px;font-weight:700;color:#111}
-.dg{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.dg{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .dc{border:1px solid #e5e7eb;border-radius:8px;padding:12px}
-.dh{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
-.dn{font-size:12px;font-weight:600;color:#111}
-.dd{font-size:11px;color:#6b7280;margin-bottom:8px}
+.dh{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.dn{font-size:12px;font-weight:600}.dd{font-size:11px;color:#6b7280;margin-bottom:8px}
 .bk{font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px}
-.bok{background:#dcfce7;color:#166534}
-.bpn{background:#fef3c7;color:#92400e}
-hr.div{border:none;border-top:1px solid #e8e8e8;margin:11px 0}
+.bok{background:#dcfce7;color:#166534}.bpn{background:#fef3c7;color:#92400e}
+hr.div{border:none;border-top:1px solid #e8e8e8;margin:12px 0}
 .spin{display:inline-block;width:12px;height:12px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
+.sbar{margin-top:12px;padding:10px 14px;border-radius:8px;font-size:12px;display:flex;align-items:center;gap:10px}
+.sok{background:#dcfce7;color:#166534;border:1px solid #bbf7d0}
+.serr{background:#fee2e2;color:#dc2626;border:1px solid #fecaca}
 </style>
 </head>
 <body>
 <div class="app">
   <div class="top">
-    <div class="top-left">
-      <img src="https://www.yardi.com/wp-content/client-mu-plugins/cmw-icons/svg/logos/yardi_logo.svg" alt="Yardi" height="28" style="filter:brightness(0) invert(1);display:block">
-      <div class="top-divider"></div>
-      <h1>Project Setup Agent</h1>
+    <div class="tl">
+      <img src="https://www.yardi.com/wp-content/client-mu-plugins/cmw-icons/svg/logos/yardi_logo.svg" alt="Yardi" height="24" onerror="this.style.display='none';document.getElementById('yt').style.display='block'" style="filter:brightness(0) invert(1);display:block">
+      <span id="yt" style="display:none;font-weight:700;font-size:16px;color:#fff">Yardi</span>
+      <div class="tdiv"></div><h1>Project Setup Agent</h1>
     </div>
-    <span id="pill">No project loaded</span>
+    <span class="pill" id="pill">No project loaded</span>
   </div>
   <div class="body">
     <div class="nav" id="nav"></div>
     <div class="main" id="main"></div>
   </div>
 </div>
-
 <script>
-// ── CONFIG: paste your Anthropic API key here ─────────────────────────────
-var API_KEY = "PASTE_YOUR_API_KEY_HERE";
-// ─────────────────────────────────────────────────────────────────────────────
-
-var STEPS=["Project & Modules","Cloud Email","BPR Agenda","BPR Documents","RFI Sheet","Review & Export"];
-var MODS=[
-  {id:"vc", name:"Vendor Cafe",        desc:"Vendor onboarding & portal"},
-  {id:"p2p",name:"Procure to Pay",     desc:"PR/PO, invoices, payments"},
-  {id:"fa", name:"Fixed Asset Manager",desc:"Assets & depreciation"},
-  {id:"fm", name:"Facility Manager",   desc:"Work orders, PPM, inspections"},
-];
+// ── Data from your real uploaded templates ────────────────────────────────────
+var MODS=[{id:"vc",name:"Vendor Cafe",desc:"Vendor onboarding & portal"},{id:"p2p",name:"Procure to Pay",desc:"PR/PO, invoices, payments"},{id:"fa",name:"Fixed Asset Manager",desc:"Assets & depreciation"},{id:"wo",name:"Work Orders",desc:"FM work orders"},{id:"fm",name:"Inspection & PPM",desc:"Inspections, PPM"}];
 var DBS=["Live","Test","UAT","Training","DM Test","CommCafe"];
-var BPR={
-  vc: {label:"Vendor Cafe BPR",      sec:"Vendor Master, Vendor Markets, Categories, Approval Workflows, Portal Config, Email Templates, TRN, EFT Format"},
-  p2p:{label:"Procure to Pay BPR",   sec:"PR/PO Process, GRN, Invoice Management, Payment Processing, Petty Cash, Credit Notes, Service Contracts"},
-  fa: {label:"Fixed Assets BPR",     sec:"Asset Groups & Types, Depreciation Methods, Asset Creation, Transactions (purchase/transfer/disposal/impairment), Warranty"},
-  fm: {label:"Facility Manager BPR", sec:"Maintenance Models, Work Order Lifecycle, Team Structure, Inspection Types, PPM Setup, SLA/KPI"},
-};
-var RFI={
-  vc: [["Vendor Markets","Critical"],["Vendor Categories & Insurance Types","Critical"],["Vendor Workflow / Approval DOA","Critical"],["Mandatory Documents for Registration","High"],["Vendor User Defined Fields","High"],["Vendor Agreement","High"],["Vendor Cafe Configurations","Medium"],["VC Email Templates","Medium"],["Support Numbers / Email","Medium"],["EFT Format","Medium"]],
-  p2p:[["List of Expense Types","Critical"],["PR & PO Approval Workflow","Critical"],["PO Attachment Types","Critical"],["Invoice Approval DOA","High"],["Invoice Attachment Types","High"],["Direct Payable Attachment Types","High"],["Fields for EFT on Bank Record","Medium"],["Invoice Payment Methods","Medium"],["Payments Approval DOA","Medium"],["Payment Attachment Types","Medium"],["PO User Defined Fields","Medium"],["Service Contract DoA","Medium"],["Service Contract Business Types","Medium"],["Service Contract Attachments","Medium"]],
-  fa: [["Asset Groups","Critical"],["Asset Types","Critical"],["Asset Depreciation Groups","Critical"],["Fixed Asset Attachments","High"],["Asset Process Details","High"]],
-  fm: [["Maintenance Models","Critical"],["Team Structure & Roles","Critical"],["Employee Time Slots","Critical"],["WO Priority Setup","High"],["WO Status & Change Reasons","High"],["WO Categories & Subcategories","High"],["WO Attachments","Medium"],["WO SLA & Due Date Defaults","Medium"],["Employee Skills","Medium"],["WO Roles & Workflow","Medium"],["WO Config Points","Medium"],["Inspection Process","Medium"],["Inspection Statuses","Medium"],["PM Process","Medium"],["PM Statuses","Medium"],["PPM Config Points","Medium"],["Auto Assignment Rules","Medium"]],
-};
+var STEPS=["Project & Modules","Cloud Email","BPR Agenda","BPR Documents","RFI Sheet","Review & Export"];
+var TN={vc:"Vendor Cafe",p2p:"Procure to Pay",fa:"Fixed Assets",wo:"Work Orders",fm:"Inspection & PPM"};
 
-var step=0,doneS=new Set(),loading={},texts={};
-var aMods=new Set(["vc","p2p","fa","fm"]),aDbs=new Set(DBS);
-var bTab="vc",bCtx={},tRows=["",""];
-var F={name:"",pin:"",tz:"",srcDB:"",liveWS:"",testWS:"",consultant:"",sm:"Yes",pi:"",
-       to:"Nereah.Abwao@Yardi.Com",cc:"",cnotes:"",bFrom:"",bUntil:"",sTime:"10:00 AM",sDur:"3",
-       focal:"",dl:"",rnotes:""};
+var TREQS={
+vc:[["","Departments involved in short listing Vendors","Individual Departments can recommend vendors. Maintenance Vendors recommended by FM Manager. Petty cash vendors picked directly by the buyer."],["","Number of Active Vendors in the Legacy system","To be filled in RFI sheet"],["","Vendor Markets (Local / International)","To be filled in RFI sheet"],["","Vendor Categories","To be filled in RFI sheet"],["","Vendor Insurance types required per Vendor category","To be filled in RFI sheet"],["","Vendor Approval process per category – Approval DOA","To be filled in RFI sheet"],["","Mandatory documents for Vendor Registration","To be filled in RFI sheet"],["","Vendor Profile Review and Approval – Level 1 (Vendor Café) and Level 2 (P2P)","To be filled in RFI sheet"],["","Registration process for Existing Vendors","Bulk invitation emails dispatched. Level 2 approval not required for migrated vendors."],["","Scenarios where Vendors will NOT be registered for Vendor Portal","Utility vendors (DEWA, ADEWA), Government entities, Petty Cash Vendors, Employees"],["","Vendor Payment methods","To be filled in RFI sheet – Cheque, EFT, Cash, Bank Transfer, Credit Card"],["","Additional Fields for Vendor master","To be filled in RFI sheet"],["","Vendor Agreement","To be filled in RFI sheet"],["","Vendor Café Configurations","To be filled in RFI sheet"],["","Email Templates","To be filled in RFI sheet"],["","Support Details for Vendors (phone, email)","To be filled in RFI sheet"],["","Vendor Café TRN – Email combination scenarios","Distinct Email IDs and TRN numbers recommended per vendor."]],
+p2p:[["","Procure to Pay process overview","PR raised by FM Manager or Property Admin → PO approved by GM → Finance review → PO released to Vendor Café → GRN → Invoice → Payment"],["","P2P Team structure (PO creator, GRN, Invoicing, Payments)","FM Manager, Property Admin, Property Manager, General Manager, Finance Manager, AP Accountant"],["","List of Expense Types to be configured","To be filled in RFI sheet"],["","DOA/workflow for PR/PO approval","To be filled in RFI sheet"],["","PO Attachment Types","To be filled in RFI sheet"],["","Who will enter AP Invoice?","AP Accountant (Elevate), Vendor (Vendor Café), FM Manager (after GRN)"],["","Invoice types without PO (Direct invoices)","Cash Purchases, Utilities, Legal expenses, Dubai Civil Defence, AMC Invoices"],["","Invoice processing across multiple properties","Allowed across multiple properties under same Legal entity"],["","DOA/workflow for Invoice approval","To be filled in RFI sheet"],["","Invoice Attachment Types","To be filled in RFI sheet"],["","Direct Payable Attachment Types","To be filled in RFI sheet"],["","Payment methods – Cheque, EFT, bank details","To be filled in RFI sheet"],["","DOA/workflow for Payment approval","To be filled in RFI sheet"],["","Advance payments to vendor","To be filled in RFI sheet. 95% cases: tax invoice received. 5%: proforma – AP control account used."],["","PO Accrual process","Open PO with GRN but not invoiced. Partial GRN. AMC PO accrual regardless of GRN."],["","Credit Notes","Raised by Vendor in Vendor Café or by Finance in Yardi. Adjusted against vendor payments."],["","Service Contract process and DOA","To be filled in RFI sheet"]],
+fa:[["","Number of Assets and current tracking method","To be confirmed. Estate property tracked in Oracle."],["","Asset Groups","To be filled in the RFI sheet"],["","Asset Types","To be filled in the RFI sheet"],["","Depreciation Conventions and Methods","Method: Straight line. Convention: Daily Calculation. Posting: Monthly"],["","How Assets are created","Procurement flow (PR→PO→GRN→Capitalization by Finance) or Direct Creation by FM. Bulk upload via ETL."],["","Asset revaluation (up/down)","Done by landlord then shared with Finance to modify book value."],["","Depreciation calculation frequency","Daily Calculation, Monthly Posting"],["","Asset Lifecycle Transactions","Purchase, Depreciation, Transfer, Sale, Replacement, Impairment, Reclassify, Derecognition, Split, Merge"],["","Asset Warranty","Yes – warranty information maintained on each asset"],["","Asset Auto Code – Prefix per asset type","Yes – prefix and sequence based on Asset Type selected"],["","Asset Barcode","Asset barcode added to each asset for tracking"]],
+wo:[["","Maintenance Business Models supported","To be filled in RFI sheet – In-house, Outsourcing Contractual, Non-Contractual, Out of Scope, Major WO, Work Permit"],["","Team Structure and Roles","FM Manager, FM Engineer, Supervisor, Technician, Storekeeper, HSE Officer, FM Admin, CAFM Planners"],["","FM working days and shifts","7:30 AM to 2:30 PM (Sunday to Thursday)"],["","In-House Servicing WO Status Lifecycle","Call → Call → Scheduled → In Progress → Material Required → Material Released → Ready to Close → Work Completed"],["","Outsourcing Contractual WO Status Lifecycle","Call → Scheduled → Assigned to Vendor → Vendor Completed → Work Completed"],["","WO Priority configuration","To be filled in RFI sheet"],["","WO Status and Change Reasons","To be filled in RFI sheet"],["","WO Categories and Subcategories","To be filled in RFI sheet"],["","WO Attachments","To be filled in RFI sheet"],["","WO SLA KPI and Due Date Defaults","To be filled in RFI sheet"],["","Employee Skills","To be filled in RFI sheet"],["","Work Order Roles and Workflow","To be filled in RFI sheet"],["","WO Configuration Points","To be filled in RFI sheet"]],
+fm:[["","High level overview of Inspection process","One Time Setup: Templates, Types (Patient Move-Out, Incident Recording, Utility, Adhoc). Ongoing: Adhoc & Recurring Inspections."],["","Inspection Objects","Property, Building, Common Areas"],["","Types of Inspections","Adhoc: Patient Move-Out, Incident Recording. Recurring: Utility, General."],["","Inspection working hours","Morning 08:00–13:00 (max 50). Afternoon 13:00–18:00 (max 50)."],["","Who fixes failed inspection items","Maintenance Contractor (in case of AMC)"],["","Inspection related setups","To be filled in RFI sheet"],["","Inspection Statuses","To be filled in RFI sheet – Fail, Cancel, Needs Approval, In Progress, Completed, On Hold"],["","Inspection Templates","To be filled in the ETLs"],["","PPM Objects","Equipment"],["","High level overview of PPM process","PPMs posted per frequency. Types: PPM Inspections (Vendors per Service Contract) and PPM Verification (In-House). Vendor payments after snag rectification."],["","Departments involved in PPM","AMC Vendors"],["","PPM Types and Setup","To be filled in the ETLs"]]};
 
-function client(){return F.name||"[Client Name]";}
-function selMods(){return MODS.filter(function(m){return aMods.has(m.id);});}
-function todayStr(){return new Date().toLocaleDateString("en-GB",{day:"2-digit",month:"long",year:"numeric"});}
+var TTITLES={vc:"VENDOR CAFÉ",p2p:"PROCURE TO PAY",fa:"FIXED ASSETS",wo:"FM – WORK ORDERS",fm:"FM – INSPECTION AND PPM"};
+var TSUB={vc:"Vendor Cafe",p2p:"Procure to Pay",fa:"Fixed Assets",wo:"Facilities Management – Work Orders",fm:"Facilities Management – Inspection and PPM"};
+var TOV={vc:"The purpose of this document is to provide insight to {C} Business Processes and System requirements for Vendor Cafe. Yardi will use these responses to prepare a list of further interview questions and discussion sessions.",p2p:"The purpose of this document is to provide insight to the {C} business processes and system requirements. Yardi will use these responses to prepare a list of further interview questions and discussion sessions.",fa:"The purpose of this document is to provide insight to the {C} Business Processes and System requirements for Fixed Assets. Yardi will use these responses to prepare a list of further interview questions and discussion sessions.",wo:"The purpose of this document is to provide insight to {C} Business Processes and System requirements for Facilities Management – Work orders. Yardi will use these responses to prepare a list of further interview questions and discussion sessions.",fm:"The purpose of this document is to provide insight to {C} Business Processes and System requirements for Facilities Management – Inspection and PPM. Yardi will use these responses to prepare a list of further interview questions and discussion sessions."};
+
+var RROWS=[[1,"Vendor Café","P2P3","Vendor Markets","Procurement","High"],[2,"Vendor Café","P2P4,P2P5","Vendor Categories and Insurance Types","Procurement","High"],[3,"Vendor Café","P2P6,P2P8","Vendor Workflow / Approval DOA","Procurement","Critical"],[4,"Vendor Café","P2P7","Mandatory Documents for Vendor Registration","Procurement","Low"],[5,"Vendor Café","P2P14","Vendor User Defined Fields","Procurement","High"],[6,"Vendor Café","P2P15","Vendor Agreement","Procurement","Low"],[7,"Vendor Café","P2P16","Vendor Cafe Configurations","Procurement","Low"],[8,"Vendor Café","P2P17","VC Email Templates","Procurement","Low"],[9,"Vendor Café","P2P19","Support Numbers / Email","Procurement","High"],[10,"Vendor Café","","EFT Format","Finance","Low"],[11,"P2P","AP1.1","Person Creating PO","Procurement","High"],[12,"P2P","AP1.1","Person Creating Invoice","Finance","High"],[13,"P2P","AP1.3","List of Expense Types","Procurement","Critical"],[14,"P2P","AP1.4","PR and PO Approval Workflow","Procurement","Critical"],[15,"P2P","AP1.5","PO Attachment Types","Procurement","High"],[16,"P2P","AP1.6","Invoice Approval DOA","Finance","Critical"],[17,"P2P","AP1.7","Invoice Attachment Types","Finance","High"],[18,"P2P","AP1.10","Direct Payable Attachment Types","Finance","High"],[19,"P2P","AP1.11","Fields for EFT on Bank Record","Finance","High"],[20,"P2P","AP1.11","Invoice Payment Methods","Finance","High"],[21,"P2P","AP1.12","Payments Approval DOA (GL Disbursement)","Finance","Critical"],[22,"P2P","AP1.13","Payment Attachment Types","Finance","High"],[23,"P2P","Additional","Process for Cancelling PO","Procurement","High"],[24,"P2P","Additional","Terms & Conditions on PO","Procurement","High"],[25,"P2P","","PO User Defined Fields","Procurement","High"],[26,"P2P Services","AP4.2","Service Contract DoA","Procurement","Critical"],[27,"P2P Services","","Service Contract Business Types","Procurement","High"],[28,"P2P Services","AP4.3","Service Contract Attachments","Procurement","High"],[29,"Fixed Assets","FA2","Asset Groups","Finance","High"],[30,"Fixed Assets","FA3","Asset Types","Finance","High"],[31,"Fixed Assets","FA4","Asset Depreciation Groups","Finance","High"],[32,"Fixed Assets","FA13","Fixed Asset Attachments","Finance","High"],[33,"Fixed Assets","","Asset Process Details","Finance","High"],[34,"Facility Manager","FM1","Maintenance Models","Facility Management",""],[35,"Facility Manager","FM2","Team Structure","Facility Management",""],[36,"Facility Manager","FM3","Employee Time Slots","Facility Management",""],[37,"Facility Manager","FM8,FM9","WO Priority","Facility Management",""],[38,"Facility Manager","FM10,FM11","WO Status and Change Reason","Facility Management",""],[39,"Facility Manager","FM7","WO Category and Subcategories","Facility Management",""],[40,"Facility Manager","FM12","WO Attachments","Facility Management",""],[41,"Facility Manager","","WO SLA KPI and Due Date Defaults","Facility Management",""],[42,"Facility Manager","","Employee Skills","Facility Management",""],[43,"Facility Manager","","Work Order Roles and Workflow","Facility Management",""],[44,"Facility Manager","FM18","WO Config Points","Facility Management",""],[45,"Facility Manager","IN1","Inspection Process","Facility Management",""],[46,"Facility Manager","IN8","Inspection Statuses","Facility Management",""],[47,"Facility Manager","PPM2","PM Process","Facility Management",""],[48,"Facility Manager","IN8","PM Statuses","Facility Management",""],[49,"Facility Manager","IN7","Inspections & PPM Config Points","Facility Management",""],[50,"Facility Manager","","Auto Assignment Rules","Facility Management",""],[51,"Facility Manager","","PPM Checklists","Facility Management","ETL"],[52,"Facility Manager","","Equipment Systems & Types","Facility Management","ETL"],[53,"Facility Manager","","Equipments","Facility Management","ETL"],[54,"Facility Manager","IN9","Inspection Templates","Facility Management","ETL"],[55,"Facility Manager","","Warehouse Locations","Facility Management","ETL"],[56,"Facility Manager","","Item Categories","Facility Management","ETL"],[57,"Facility Manager","","Item Type","Facility Management","ETL"]];
+var M2R={vc:["Vendor Café"],p2p:["P2P","P2P Services"],fa:["Fixed Assets"],wo:["Facility Manager"],fm:["Facility Manager"]};
+
+// ── State ─────────────────────────────────────────────────────────────────────
+var step=0,done=new Set(),loading={};
+var am=new Set(["vc","p2p","fa","wo","fm"]),adb=new Set(DBS),bt="vc",bc={},tr=["",""];
+var F={name:"",pin:"",tz:"",sdb:"",lw:"",tw:"",con:"",sm:"Yes",pi:"",to:"Nereah.Abwao@Yardi.Com",cc:"",cn:"",bf:"",bu:"",st:"10:00 AM",sd:"3",fo:"",dl:"",rn:""};
+function cl(){return F.name||"[Client]";}
+function sm(){return MODS.filter(function(m){return am.has(m.id);});}
+function td(){return new Date().toLocaleDateString("en-GB",{day:"2-digit",month:"long",year:"numeric"});}
 function esc(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
-function go(n){step=n;render();}
-function setF(k,v){F[k]=v;renderPill();}
-function toggleMod(id){if(aMods.has(id))aMods.delete(id);else aMods.add(id);render();}
-function toggleDb(db){if(aDbs.has(db))aDbs.delete(db);else aDbs.add(db);render();}
-function addTeam(){tRows.push("");render();}
-function rmTeam(i){if(tRows.length>1){tRows.splice(i,1);render();}}
-function setBTab(id){bTab=id;render();}
+function go(n){step=n;re();}
+function sf(k,v){F[k]=v;rp();}
+function tm(id){if(am.has(id))am.delete(id);else am.add(id);re();}
+function tdb(d){if(adb.has(d))adb.delete(d);else adb.add(d);re();}
+function at(){tr.push("");re();}
+function rt(i){if(tr.length>1){tr.splice(i,1);re();}}
+function sbt(id){bt=id;re();}
+function rp(){var e=document.getElementById("pill");if(e)e.textContent=F.name?F.name+" — "+sm().length+" modules":"No project loaded";}
+function addH(t,h){try{var p=t.match(/(\d+):(\d+)\s*(AM|PM)?/i);if(!p)return t;var hh=parseInt(p[1]),mm=parseInt(p[2]),ap=(p[3]||"").toUpperCase();if(ap==="PM"&&hh!==12)hh+=12;if(ap==="AM"&&hh===12)hh=0;hh+=h;var na=hh>=12?"PM":"AM";if(hh>12)hh-=12;if(hh===0)hh=12;return hh+":"+String(mm).padStart(2,"0")+" "+na;}catch(e){return t;}}
 
-function renderPill(){
-  var el=document.getElementById("pill");
-  if(el)el.textContent=F.name?F.name+" \u2014 "+selMods().length+" modules":"No project loaded";
-}
+// ── DOCX builder ─────────────────────────────────────────────────────────────
+async function buildDocx(titleText, subtitleText, sections){
+  var d=docx;
+  var BLUE="185FA5",GR="5F5E5A",DK="2C2C2A",WH="FFFFFF",LG="F5F5F5";
+  var bd={style:d.BorderStyle.SINGLE,size:4,color:"CCCCCC"};
+  var bds={top:bd,bottom:bd,left:bd,right:bd};
+  var hbd={style:d.BorderStyle.SINGLE,size:4,color:BLUE};
+  var hbds={top:hbd,bottom:hbd,left:hbd,right:hbd};
 
-async function callClaude(sys,usr){
-  if(!API_KEY||API_KEY==="PASTE_YOUR_API_KEY_HERE"){
-    throw new Error("API key not set. Open the HTML file in a text editor and paste your Anthropic API key where it says PASTE_YOUR_API_KEY_HERE");
+  function mkHdrCell(t,w){
+    return new d.TableCell({borders:hbds,width:{size:w,type:d.WidthType.DXA},shading:{fill:BLUE,type:d.ShadingType.CLEAR},margins:{top:80,bottom:80,left:120,right:120},verticalAlign:d.VerticalAlign.CENTER,
+      children:[new d.Paragraph({alignment:d.AlignmentType.CENTER,children:[new d.TextRun({text:String(t||""),font:"Arial",size:20,bold:true,color:WH})]})]});
   }
-  var r=await fetch("https://api.anthropic.com/v1/messages",{
-    method:"POST",
-    headers:{"Content-Type":"application/json","x-api-key":API_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
-    body:JSON.stringify({model:"claude-opus-4-6",max_tokens:1200,system:sys,messages:[{role:"user",content:usr}]})
+  function mkCell(t,w,shade,center){
+    return new d.TableCell({borders:bds,width:{size:w,type:d.WidthType.DXA},shading:{fill:shade||WH,type:d.ShadingType.CLEAR},margins:{top:80,bottom:80,left:120,right:120},
+      children:[new d.Paragraph({alignment:center?d.AlignmentType.CENTER:d.AlignmentType.LEFT,children:[new d.TextRun({text:String(t||""),font:"Arial",size:20,color:DK})]})]});
+  }
+  function h1(text){return new d.Paragraph({spacing:{before:240,after:120},children:[new d.TextRun({text,font:"Arial",size:26,bold:true,color:BLUE})]});}
+  function h2(text){return new d.Paragraph({spacing:{before:160,after:80},children:[new d.TextRun({text,font:"Arial",size:22,bold:true,color:BLUE})]});}
+  function para(text,opts){return new d.Paragraph({spacing:{before:40,after:40},children:[new d.TextRun({text:String(text||""),font:"Arial",size:20,...(opts||{})})]}); }
+  function divider(){return new d.Paragraph({border:{bottom:{style:d.BorderStyle.SINGLE,size:6,color:BLUE,space:1}},spacing:{before:80,after:80},children:[]});}
+
+  var children=[];
+
+  // Title block
+  children.push(new d.Paragraph({alignment:d.AlignmentType.CENTER,spacing:{before:0,after:160},children:[new d.TextRun({text:titleText,font:"Arial",size:36,bold:true,color:BLUE})]}));
+  children.push(new d.Paragraph({alignment:d.AlignmentType.CENTER,spacing:{before:0,after:80},children:[new d.TextRun({text:"Business Process Requirements",font:"Arial",size:24,bold:true,color:DK})]}));
+  children.push(new d.Paragraph({alignment:d.AlignmentType.CENTER,spacing:{before:0,after:80},children:[new d.TextRun({text:subtitleText,font:"Arial",size:22,italic:true,color:DK})]}));
+  children.push(new d.Paragraph({alignment:d.AlignmentType.CENTER,spacing:{before:0,after:200},children:[new d.TextRun({text:"Confidential  |  "+td(),font:"Arial",size:18,color:GR})]}));
+  children.push(divider());
+
+  // Version Control table
+  children.push(h1("Version Control"));
+  children.push(new d.Table({width:{size:9360,type:d.WidthType.DXA},columnWidths:[1560,2340,2340,3120],rows:[
+    new d.TableRow({tableHeader:true,children:[mkHdrCell("Version",1560),mkHdrCell("Date",2340),mkHdrCell("Author",2340),mkHdrCell("Comments",3120)]}),
+    new d.TableRow({children:[mkCell("1.0",1560,WH,true),mkCell(td(),2340),mkCell(F.con||"Yardi Consultant",2340),mkCell("First Version",3120)]}),
+    new d.TableRow({children:[mkCell("2.0",1560,LG,true),mkCell("",2340,LG),mkCell("",2340,LG),mkCell("",3120,LG)]}),
+  ]}));
+  children.push(new d.Paragraph({spacing:{before:120,after:0},children:[]}));
+
+  // Sign Off table
+  children.push(h1("Sign Off"));
+  var soRows=[new d.TableRow({tableHeader:true,children:[mkHdrCell("Sign Off",2340),mkHdrCell("Signatory Name",2340),mkHdrCell("Date",2340),mkHdrCell("Signature",2340)]})];
+  for(var i=0;i<6;i++){var sg=i%2===1?LG:WH;soRows.push(new d.TableRow({children:[mkCell("",2340,sg),mkCell("",2340,sg),mkCell("",2340,sg),mkCell("",2340,sg)]}));}
+  children.push(new d.Table({width:{size:9360,type:d.WidthType.DXA},columnWidths:[2340,2340,2340,2340],rows:soRows}));
+  children.push(new d.Paragraph({spacing:{before:120,after:0},children:[]}));
+
+  // Copyright
+  children.push(h1("Copyright Notice"));
+  children.push(para("This document: (1) contains confidential and proprietary information; (2) is protected by copyright and other intellectual property laws; and (3) is intended solely for Yardi Systems, Inc. licensees about their use of Yardi software. Use of this document is subject to the terms and conditions of a Yardi Systems, Inc. software license agreement including, but not limited to, restrictions on its use and disclosure.",{color:GR,size:18,italics:true}));
+  children.push(divider());
+
+  // Overview
+  children.push(h1("Overview"));
+  children.push(para(sections.overview));
+  children.push(new d.Paragraph({spacing:{before:80,after:0},children:[]}));
+
+  // Requirements sections
+  sections.tables.forEach(function(tbl){
+    children.push(h2(tbl.title));
+    var colW=[1440,3120,4800];
+    var reqRows=[new d.TableRow({tableHeader:true,children:[mkHdrCell("Yardi Reference",1440),mkHdrCell("Topic",3120),mkHdrCell("Requirement",4800)]})];
+    tbl.rows.forEach(function(row,ri){var bg=ri%2===1?LG:WH;reqRows.push(new d.TableRow({children:[mkCell(row[0],1440,bg,true),mkCell(row[1],3120,bg),mkCell(row[2],4800,bg)]}));});
+    children.push(new d.Table({width:{size:9360,type:d.WidthType.DXA},columnWidths:colW,rows:reqRows}));
+    children.push(new d.Paragraph({spacing:{before:120,after:0},children:[]}));
   });
-  var d=await r.json();
-  if(d.content&&d.content[0]&&d.content[0].text)return d.content[0].text;
-  throw new Error((d.error&&d.error.message)||"API error — check your API key");
+
+  // Additional requirements
+  children.push(h1("Additional Requirements raised during the BPR Session"));
+  var addRows=[new d.TableRow({tableHeader:true,children:[mkHdrCell("#",720),mkHdrCell("Point Raised",3120),mkHdrCell("Raised by",2160),mkHdrCell("Yardi Response",3360)]})];
+  for(var j=0;j<3;j++){var abg=j%2===1?LG:WH;addRows.push(new d.TableRow({children:[mkCell(""+(j+1),720,abg,true),mkCell("",3120,abg),mkCell("",2160,abg),mkCell("",3360,abg)]}));}
+  children.push(new d.Table({width:{size:9360,type:d.WidthType.DXA},columnWidths:[720,3120,2160,3360],rows:addRows}));
+  children.push(new d.Paragraph({spacing:{before:160,after:80},children:[]}));
+  children.push(para("RFI Items: Refer RFI document on SharePoint.",{italics:true,color:GR}));
+  children.push(divider());
+  children.push(new d.Paragraph({alignment:d.AlignmentType.CENTER,spacing:{before:60,after:0},children:[new d.TextRun({text:"© "+new Date().getFullYear()+" Yardi Systems, Inc. All rights reserved. This document is confidential and intended solely for the named client.",font:"Arial",size:16,color:GR,italics:true})]}));
+
+  var doc=new d.Document({
+    styles:{default:{document:{run:{font:"Arial",size:20}}}},
+    sections:[{
+      properties:{page:{size:{width:12240,height:15840},margin:{top:1440,right:1440,bottom:1440,left:1440}}},
+      headers:{default:new d.Header({children:[new d.Paragraph({alignment:d.AlignmentType.RIGHT,border:{bottom:{style:d.BorderStyle.SINGLE,size:4,color:BLUE,space:1}},children:[new d.TextRun({text:titleText+" | "+cl()+" | CONFIDENTIAL",font:"Arial",size:18,color:GR})]})]})} ,
+      footers:{default:new d.Footer({children:[new d.Paragraph({alignment:d.AlignmentType.CENTER,border:{top:{style:d.BorderStyle.SINGLE,size:4,color:BLUE,space:1}},children:[new d.TextRun({text:"Yardi Systems, Inc.  |  Page ",font:"Arial",size:16,color:GR}),new d.TextRun({children:[d.PageNumber.CURRENT],font:"Arial",size:16,color:GR})]})]})} ,
+      children
+    }]
+  });
+  return await d.Packer.toBuffer(doc);
 }
 
-async function gen(key,sn,sys,usr){
-  loading[key]=true;render();
-  try{var t=await callClaude(sys,usr);texts[key]=t;doneS.add(sn);}
-  catch(e){texts[key]="Error: "+e.message;}
-  loading[key]=false;render();
+// ── Download helper ───────────────────────────────────────────────────────────
+function dlFile(buf,filename,mime){
+  var blob=new Blob([buf],{type:mime});
+  var a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);a.download=filename;a.click();URL.revokeObjectURL(a.href);
 }
 
-function render(){
-  renderPill();
-  var nav=document.getElementById("nav");
-  nav.innerHTML=STEPS.map(function(s,i){
-    var cls="ni"+(step===i?" act":"")+(doneS.has(i)?" done":"");
-    return'<div class="'+cls+'" onclick="go('+i+')">'
-      +'<div class="nd">'+(doneS.has(i)?"&#10003;":i+1)+'</div>'
-      +'<div class="nl">'+s+'</div></div>';
-  }).join("");
-  var panels=[p1,p2,p3,p4,p5,p6];
-  document.getElementById("main").innerHTML=panels[step]();
+// ── Generate BPR .docx ────────────────────────────────────────────────────────
+async function genBpr(id){
+  loading["bpr_"+id]=true;re();
+  try{
+    var c=cl();
+    var rows=(TREQS[id]||[]).map(function(r){return[r[0],r[1],r[2].replace(/\{C\}/g,c)];});
+    var buf=await buildDocx(TTITLES[id],TSUB[id],{overview:TOV[id].replace(/\{C\}/g,c),tables:[{title:TN[id],rows:rows}]});
+    dlFile(buf,"BPR_"+id.toUpperCase()+"_"+c.replace(/\s+/g,"_")+".docx","application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+    done.add(3);
+  }catch(e){alert("Error generating BPR: "+e.message);}
+  loading["bpr_"+id]=false;re();
 }
 
-function fld(label,key,placeholder,type,extra){
-  var val=F[key]||"";
-  var full=(extra&&extra.full)?"full":"";
-  if(type==="select"){
-    var opts=(extra.opts||[]).map(function(o){return'<option'+(val===o?' selected':'')+'>'+o+'</option>';}).join("");
-    return'<div class="'+full+'"><label class="lbl">'+label+'</label><select onchange="setF(\''+key+'\',this.value)">'+opts+'</select></div>';
-  }
-  if(type==="textarea"){
-    return'<div class="'+full+'"><label class="lbl">'+label+'</label><textarea onchange="setF(\''+key+'\',this.value)" placeholder="'+placeholder+'">'+esc(val)+'</textarea></div>';
-  }
-  return'<div class="'+full+'"><label class="lbl">'+label+'</label><input type="'+(type||"text")+'" value="'+esc(val)+'" oninput="setF(\''+key+'\',this.value)" placeholder="'+placeholder+'"></div>';
+// ── Generate Email .docx ──────────────────────────────────────────────────────
+async function genEmail(){
+  loading.email=true;re();
+  try{
+    var c=cl(),co=F.con||"Yardi Consultant",t=td();
+    var emailRows=[
+      ["TO",F.to||"Cloud Team"],["CC",F.cc||"[Project Team]"],["FROM",co+" | Yardi Consultant"],["DATE",t],
+      ["Client Name",c],["Client PIN",F.pin||"[PIN]"],["Time Zone",F.tz||"[TZ]"],
+      ["Live Webshare",F.lw||"To be confirmed"],["Test Webshare",F.tw||"To be confirmed"],
+      ["Databases",Array.from(adb).join(", ")],
+      ["Source DB for Restore",F.sdb||"To be confirmed"],
+      ["PI Installation",F.pi||"As per standard PI list"],
+      ["Service Manager",F.sm],
+    ];
+    if(F.cn) emailRows.push(["Additional Notes",F.cn]);
+
+    var d=docx;
+    var BLUE="185FA5",GR="5F5E5A",DK="2C2C2A",WH="FFFFFF",LG="F5F5F5";
+    var bd={style:d.BorderStyle.SINGLE,size:4,color:"CCCCCC"};
+    var bds={top:bd,bottom:bd,left:bd,right:bd};
+    function mkC(t,w,bg,bold){return new d.TableCell({borders:bds,width:{size:w,type:d.WidthType.DXA},shading:{fill:bg||WH,type:d.ShadingType.CLEAR},margins:{top:80,bottom:80,left:120,right:120},children:[new d.Paragraph({children:[new d.TextRun({text:String(t||""),font:"Arial",size:20,bold:!!bold,color:DK})]})]});}
+
+    var rows=emailRows.map(function(r,i){var bg=i%2===1?LG:WH;return new d.TableRow({children:[mkC(r[0],2340,"E6F1FB",true),mkC(r[1],7020,bg)]});});
+    var children=[
+      new d.Paragraph({alignment:d.AlignmentType.CENTER,spacing:{before:0,after:160},children:[new d.TextRun({text:"Cloud Environment Setup Request",font:"Arial",size:32,bold:true,color:BLUE})]}),
+      new d.Paragraph({alignment:d.AlignmentType.CENTER,spacing:{before:0,after:60},children:[new d.TextRun({text:c+" | "+t,font:"Arial",size:20,color:GR})]}),
+      new d.Paragraph({border:{bottom:{style:d.BorderStyle.SINGLE,size:6,color:BLUE,space:1}},spacing:{before:80,after:160},children:[]}),
+      new d.Table({width:{size:9360,type:d.WidthType.DXA},columnWidths:[2340,7020],rows}),
+      new d.Paragraph({spacing:{before:200,after:80},children:[]}),
+      new d.Paragraph({children:[new d.TextRun({text:"Dear Team,",font:"Arial",size:20,bold:true})]}),
+      new d.Paragraph({spacing:{before:80,after:80},children:[new d.TextRun({text:"Please find the environment readiness request for "+c+" detailed above. Kindly proceed with the environment setup at your earliest convenience and do not hesitate to reach out should you require any additional information.",font:"Arial",size:20})]}),
+      new d.Paragraph({spacing:{before:120,after:40},children:[new d.TextRun({text:"Best regards,",font:"Arial",size:20})]}),
+      new d.Paragraph({spacing:{before:0,after:0},children:[new d.TextRun({text:co,font:"Arial",size:20,bold:true})]}),
+      new d.Paragraph({spacing:{before:0,after:0},children:[new d.TextRun({text:"Yardi Implementation Consultant  |  Yardi Systems, Inc.",font:"Arial",size:18,color:GR})]}),
+      new d.Paragraph({spacing:{before:200,after:0},children:[]}),
+      new d.Paragraph({border:{top:{style:d.BorderStyle.SINGLE,size:4,color:BLUE,space:1}},alignment:d.AlignmentType.CENTER,spacing:{before:60,after:0},children:[new d.TextRun({text:"© "+new Date().getFullYear()+" Yardi Systems, Inc. All rights reserved. Confidential.",font:"Arial",size:16,color:GR,italics:true})]})
+    ];
+    var doc=new d.Document({styles:{default:{document:{run:{font:"Arial",size:20}}}},sections:[{properties:{page:{size:{width:12240,height:15840},margin:{top:1440,right:1440,bottom:1440,left:1440}}},children}]});
+    var buf=await d.Packer.toBuffer(doc);
+    dlFile(buf,"Cloud_Email_"+c.replace(/\s+/g,"_")+".docx","application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+    done.add(1);
+  }catch(e){alert("Error: "+e.message);}
+  loading.email=false;re();
 }
 
-function outB(key,title,fname,isXls){
-  var txt=texts[key];if(!txt)return"";
-  var dlk=key+"_dl";
-  var isErr=txt.startsWith("Error:");
-  return'<div style="margin-top:11px">'
-    +'<div class="oh"><span class="ot">'+title+'</span>'
-    +(isErr?'':'<div style="display:flex;gap:5px">'
-      +'<button class="btn bs" style="font-size:11px;padding:5px 10px" onclick="navigator.clipboard.writeText(texts[\''+key+'\']).then(function(){alert(\'Copied!\')})">Copy text</button>'
-      +(isXls
-        ?'<button class="btn bg" style="font-size:11px;padding:5px 10px" onclick="dlXls()">&#8595; Download .xlsx</button>'
-        :'<button class="btn bg" style="font-size:11px;padding:5px 10px" '+(loading[dlk]?'disabled':'')+' onclick="dlDocx(\''+key+'\',\''+fname+'\')">'+(loading[dlk]?'<span class="spin"></span> Building...':'&#8595; Download .docx')+'</button>')
-      +'</div>')
-    +'</div>'
-    +'<div class="ob" style="'+(isErr?'color:#dc2626;background:#fef2f2':'')+'">'+(isErr?esc(txt):'&#9989; Generated &mdash; preview below\n\n'+esc(txt.substring(0,600))+(txt.length>600?'\n\n... (download to see full document)':''))+'</div>'
-    +(isErr?'':'<div class="hint">&#8595; Click Download to get the formatted file</div>')
-    +'</div>';
+// ── Generate Agenda .docx ─────────────────────────────────────────────────────
+async function genAgenda(){
+  loading.agenda=true;re();
+  try{
+    var c=cl(),co=F.con||"Yardi Consultant",t=td(),mods=sm();
+    var team=tr.filter(Boolean).join(", ")||co;
+    var sd=F.bf?new Date(F.bf):null;
+    var dn2=1;
+    function dayL(n){var l="Day "+n;if(sd){var dd=new Date(sd);dd.setDate(dd.getDate()+n-1);l+=" – "+dd.toLocaleDateString("en-GB",{weekday:"short",day:"2-digit",month:"short","year":"numeric"});}return l;}
+    var sessions=[];
+    sessions.push({day:dayL(dn2++),time:F.st+" – "+addH(F.st,parseInt(F.sd)||3),hrs:F.sd+"h",topics:"Project Kickoff, Scope Walkthrough, Team Introductions, Project Plan Review",att:"All Stakeholders, Project Manager"});
+    var ms={vc:[["Vendor Master, Vendor Markets, Categories, Approval DOA, Portal Configurations","Procurement Manager, Finance Team"]],p2p:[["PR/PO Process, GRN, Invoice Management, Approval Workflows","Finance Manager, AP Accountant, Procurement"],["Payment Processing, Petty Cash, Service Contracts, Credit Notes","Finance Manager, AP Accountant"]],fa:[["Asset Groups & Types, Depreciation Methods, Asset Creation Workflows","Finance Manager, FM Manager"]],wo:[["Maintenance Models, WO Lifecycle, Team Structure, WO Statuses & Priorities","FM Manager, CAFM Planner, Supervisors"],["WO Categories, SLA/KPI, Auto Assignment, WO Configuration Points","FM Manager, CAFM Planner"]],fm:[["Inspection Types, Inspection Process, Templates Setup","FM Manager, FM Engineer, CAFM Planner"],["PPM Process, Task Groups, PPM Frequencies, Service Contract PPMs","FM Manager, AMC Vendors, CAFM Planner"]]};
+    mods.forEach(function(m){(ms[m.id]||[]).forEach(function(s){sessions.push({day:dayL(dn2++),time:F.st+" – "+addH(F.st,parseInt(F.sd)||3),hrs:F.sd+"h",topics:s[0],att:s[1]});});});
+    sessions.push({day:dayL(dn2),time:F.st+" – "+addH(F.st,parseInt(F.sd)||3),hrs:F.sd+"h",topics:"Open Items Review, Configuration Decisions, Sign-Off, Next Steps",att:"All Stakeholders, Project Manager"});
+
+    var d=docx;
+    var BLUE="185FA5",GR="5F5E5A",DK="2C2C2A",WH="FFFFFF",LG="F5F5F5";
+    var bd={style:d.BorderStyle.SINGLE,size:4,color:"CCCCCC"};
+    var bds={top:bd,bottom:bd,left:bd,right:bd};
+    var hbd={style:d.BorderStyle.SINGLE,size:4,color:BLUE};
+    var hbds={top:hbd,bottom:hbd,left:hbd,right:hbd};
+    function mkH(t,w){return new d.TableCell({borders:hbds,width:{size:w,type:d.WidthType.DXA},shading:{fill:BLUE,type:d.ShadingType.CLEAR},margins:{top:80,bottom:80,left:100,right:100},children:[new d.Paragraph({alignment:d.AlignmentType.CENTER,children:[new d.TextRun({text:t,font:"Arial",size:18,bold:true,color:WH})]})]});}
+    function mkC(t,w,bg){return new d.TableCell({borders:bds,width:{size:w,type:d.WidthType.DXA},shading:{fill:bg||WH,type:d.ShadingType.CLEAR},margins:{top:80,bottom:80,left:100,right:100},children:[new d.Paragraph({children:[new d.TextRun({text:String(t||""),font:"Arial",size:18,color:DK})]})]});}
+
+    var agRows=[new d.TableRow({tableHeader:true,children:[mkH("Day & Date",2520),mkH("Time",1800),mkH("Hrs",600),mkH("Business Topics",2880),mkH("Suggested Attendees",1560)]})];
+    sessions.forEach(function(s,i){var bg=i%2===1?LG:WH;agRows.push(new d.TableRow({children:[mkC(s.day,2520,bg),mkC(s.time,1800,bg),mkC(s.hrs,600,bg),mkC(s.topics,2880,bg),mkC(s.att,1560,bg)]}));});
+
+    var children=[
+      new d.Paragraph({alignment:d.AlignmentType.CENTER,spacing:{before:0,after:140},children:[new d.TextRun({text:"BPR Session Agenda",font:"Arial",size:32,bold:true,color:BLUE})]}),
+      new d.Paragraph({alignment:d.AlignmentType.CENTER,spacing:{before:0,after:60},children:[new d.TextRun({text:c+"  |  "+(F.bf||"TBD")+" to "+(F.bu||"TBD"),font:"Arial",size:22,bold:true,color:DK})]}),
+      new d.Paragraph({alignment:d.AlignmentType.CENTER,spacing:{before:0,after:120},children:[new d.TextRun({text:"Prepared by: "+co+"  |  "+t,font:"Arial",size:18,color:GR})]}),
+      new d.Paragraph({border:{bottom:{style:d.BorderStyle.SINGLE,size:6,color:BLUE,space:1}},spacing:{before:60,after:120},children:[]}),
+      new d.Paragraph({spacing:{before:0,after:60},children:[new d.TextRun({text:"Yardi Team: "+team,font:"Arial",size:20,bold:true,color:DK})]}),
+      new d.Paragraph({spacing:{before:0,after:140},children:[new d.TextRun({text:"Modules in Scope: "+mods.map(function(m){return m.name;}).join(", "),font:"Arial",size:20,color:GR})]}),
+      new d.Table({width:{size:9360,type:d.WidthType.DXA},columnWidths:[2520,1800,600,2880,1560],rows:agRows}),
+      new d.Paragraph({spacing:{before:200,after:0},children:[]}),
+      new d.Paragraph({border:{top:{style:d.BorderStyle.SINGLE,size:4,color:BLUE,space:1}},alignment:d.AlignmentType.CENTER,spacing:{before:60,after:0},children:[new d.TextRun({text:"© "+new Date().getFullYear()+" Yardi Systems, Inc. All rights reserved. Confidential.",font:"Arial",size:16,color:GR,italics:true})]})
+    ];
+    var doc=new d.Document({styles:{default:{document:{run:{font:"Arial",size:20}}}},sections:[{properties:{page:{size:{width:15840,height:12240},margin:{top:1080,right:1080,bottom:1080,left:1080}}},children}]});
+    var buf=await d.Packer.toBuffer(doc);
+    dlFile(buf,"BPR_Agenda_"+c.replace(/\s+/g,"_")+".docx","application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+    done.add(2);
+  }catch(e){alert("Error: "+e.message);}
+  loading.agenda=false;re();
 }
+
+// ── Generate RFI .xlsx ────────────────────────────────────────────────────────
+function genRfi(){
+  loading.rfi=true;re();
+  try{
+    var c=cl(),co=F.con||"Yardi Consultant",t=td(),mods=sm();
+    var rn=new Set();mods.forEach(function(m){(M2R[m.id]||[]).forEach(function(n){rn.add(n);});});
+    var filt=RROWS.filter(function(r){return rn.has(r[1]);});
+    var wb=XLSX.utils.book_new();
+
+    // ── Cover sheet ───────────────────────────────────────────────────────────
+    var cov=[
+      [c,"","","","","","","","","","","","","","",""],
+      ["Request for Information","","","","","","","","","","","","","","",""],
+      ["","","","","","","","","","","","","","","",""],
+      ["Prepared by:",co,"","","","","","","","","","","","","",""],
+      ["Focal Point:",F.fo||"Project Team","","","","","","","","","","","","","",""],
+      ["Target Completion Date:",F.dl||"TBD","","","","","","","","","","","","","",""],
+      ["Modules in Scope:",mods.map(function(m){return m.name;}).join(", "),"","","","","","","","","","","","","",""],
+      ["Date Prepared:",t,"","","","","","","","","","","","","",""],
+      ["","","","","","","","","","","","","","","",""],
+      ["Instructions to Client:",F.rn||"Please complete all Critical and High priority items before the first BPR session.","","","","","","","","","","","","","",""],
+    ];
+    var covWs=XLSX.utils.aoa_to_sheet(cov);
+    covWs["!cols"]=[{wch:22},{wch:55}];
+    XLSX.utils.book_append_sheet(wb,covWs,"Cover");
+
+    // ── RFI Index sheet (matches your real template columns exactly) ──────────
+    var hdr=["Sr.No.","Yardi Module","BPR Reference","Requirements (What we want?)","Department","Priority","Project Team Member","Shared Date","Target Date","Received Status","Received Date","Remarks","Closure Remarks","Delayed Days","Dependency","Configured in Live"];
+    var rows=[hdr];
+    var sr=1;
+    filt.forEach(function(r){
+      rows.push([sr++,r[1],r[2],r[3]+(r[6]==="ETL"?" (ETL – Data Template Required)":""),r[4],r[5],co,"",F.dl||"","Pending","","","","","",""]);
+    });
+    var idxWs=XLSX.utils.aoa_to_sheet(rows);
+    idxWs["!cols"]=[{wch:7},{wch:18},{wch:13},{wch:50},{wch:20},{wch:11},{wch:22},{wch:13},{wch:13},{wch:16},{wch:14},{wch:20},{wch:18},{wch:13},{wch:14},{wch:16}];
+    XLSX.utils.book_append_sheet(wb,idxWs,"RFI Index");
+
+    // ── Per-module sheets ─────────────────────────────────────────────────────
+    var modGroups={};
+    filt.forEach(function(r){
+      var key=r[1];
+      if(!modGroups[key])modGroups[key]=[];
+      modGroups[key].push(r);
+    });
+    Object.keys(modGroups).forEach(function(modName){
+      var mhdr=["Sr.No.","BPR Reference","Requirements (What we want?)","Department","Priority","Project Team Member","Shared Date","Target Date","Received Status","Received Date","Remarks"];
+      var mrows=[mhdr];
+      var msr=1;
+      modGroups[modName].forEach(function(r){mrows.push([msr++,r[2],r[3]+(r[6]==="ETL"?" (ETL – Data Template Required)":""),r[4],r[5],co,"",F.dl||"","Pending","",""]);});
+      var mws=XLSX.utils.aoa_to_sheet(mrows);
+      mws["!cols"]=[{wch:7},{wch:13},{wch:50},{wch:20},{wch:11},{wch:22},{wch:13},{wch:13},{wch:16},{wch:14},{wch:20}];
+      XLSX.utils.book_append_sheet(wb,mws,modName.substring(0,28));
+    });
+
+    XLSX.writeFile(wb,"RFI_"+c.replace(/\s+/g,"_")+".xlsx");
+    done.add(4);
+  }catch(e){alert("Error generating RFI: "+e.message);}
+  loading.rfi=false;re();
+}
+
+// ── UI Render ─────────────────────────────────────────────────────────────────
+function re(){
+  rp();
+  document.getElementById("nav").innerHTML=STEPS.map(function(s,i){var c="ni"+(step===i?" act":"")+(done.has(i)?" done":"");return'<div class="'+c+'" onclick="go('+i+')">'+'<div class="nd">'+(done.has(i)?"✓":i+1)+'</div><div class="nl">'+s+'</div></div>';}).join("");
+  [p1,p2,p3,p4,p5,p6][step]&&(document.getElementById("main").innerHTML=[p1,p2,p3,p4,p5,p6][step]());
+}
+function fl(lb,k,ph,tp,ex){
+  var v=F[k]||"",fu=(ex&&ex.full)?"full":"";
+  if(tp==="select"){var o=(ex.opts||[]).map(function(x){return'<option'+(v===x?' selected':'')+'>'+x+'</option>';}).join("");return'<div class="'+fu+'"><label class="lbl">'+lb+'</label><select onchange="sf(\''+k+'\',this.value)">'+o+'</select></div>';}
+  if(tp==="textarea"){return'<div class="'+fu+'"><label class="lbl">'+lb+'</label><textarea onchange="sf(\''+k+'\',this.value)" placeholder="'+ph+'">'+esc(v)+'</textarea></div>';}
+  return'<div class="'+fu+'"><label class="lbl">'+lb+'</label><input type="'+(tp||"text")+'" value="'+esc(v)+'" oninput="sf(\''+k+'\',this.value)" placeholder="'+ph+'"></div>';
+}
+function ldBtn(key,label,onclick){var ld=loading[key];return'<button class="btn bp" '+(ld?'disabled':'')+' onclick="'+onclick+'">'+(ld?'<span class="spin"></span> Generating...':'⬇ Download '+label)+'</button>';}
+function doneBar(key,filename){return done.has(key)||false?'':'';} // handled by button state
 
 function p1(){
-  var modH=MODS.map(function(m){
-    var on=aMods.has(m.id);
-    return'<div class="mo'+(on?' on':'')+'" onclick="toggleMod(\''+m.id+'\')">'
-      +'<div class="mc">'+(on?'&#10003;':'')+'</div>'
-      +'<div><div class="mn">'+m.name+'</div><div class="md">'+m.desc+'</div></div></div>';
-  }).join("");
-  var dbH=DBS.map(function(db){
-    return'<span class="db '+(aDbs.has(db)?'on':'off')+'" onclick="toggleDb(\''+db+'\')">'+db+'</span>';
-  }).join("");
-  return'<div><div class="pt">Project details &amp; module selection</div>'
-    +'<div class="ps">Fill in client information and select the modules in scope.</div>'
-    +'<div class="card"><div class="ct">Client information</div><div class="g2">'
-    +fld("Client name *","name","e.g. Naufar")
-    +fld("Client PIN *","pin","e.g. 100052729")
-    +fld("Time zone","tz","","select",{opts:["","UAE (GST +4)","Qatar (AST +3)","KSA (AST +3)","Kuwait (+3)","Bahrain (+3)","Oman (+4)"]})
-    +fld("Source DB for restore","srcDB","e.g. zehqlfppi_resglive (pin:100091298)")
-    +fld("Live webshare URL","liveWS","e.g. https://live.yardi.com/client")
-    +fld("Test webshare URL","testWS","e.g. https://test.yardi.com/client")
-    +fld("Consultant name(s)","consultant","e.g. Anas Takala, Rajat Agarwal","text",{full:true})
-    +fld("Service Manager","sm","","select",{opts:["Yes","No"]})
-    +fld("PI list notes","pi","e.g. As per attached list")
-    +'</div><hr class="div"><div class="lbl">Databases to create (click to toggle)</div>'
-    +'<div class="dbs">'+dbH+'</div></div>'
-    +'<div class="card"><div class="ct">Module selection (click to toggle)</div>'
-    +'<div class="mods">'+modH+'</div></div>'
-    +'<button class="btn bp" onclick="go(1)">Continue to cloud email &rarr;</button></div>';
+  var mH=MODS.map(function(m){var on=am.has(m.id);return'<div class="mo'+(on?' on':'')+'" onclick="tm(\''+m.id+'\')">'+'<div class="mc">'+(on?'✓':'')+'</div><div><div class="mn">'+m.name+'</div><div class="md">'+m.desc+'</div></div></div>';}).join("");
+  var dH=DBS.map(function(d){return'<span class="db '+(adb.has(d)?'on':'off')+'" onclick="tdb(\''+d+'\')">'+d+'</span>';}).join("");
+  return'<div><div class="pt">Project details &amp; module selection</div><div class="ps">Fill in your client information and select the modules in scope.</div>'
+    +'<div class="card"><div class="ct">Client information</div><div class="g2">'+fl("Client name *","name","e.g. Naufar")+fl("Client PIN *","pin","e.g. 100052729")+fl("Time zone","tz","","select",{opts:["","UAE (GST +4)","Qatar (AST +3)","KSA (AST +3)","Kuwait (+3)","Bahrain (+3)","Oman (+4)"]})+fl("Source DB for restore","sdb","e.g. zehqlfppi_resglive")+fl("Live webshare URL","lw","e.g. https://live.yardi.com/client")+fl("Test webshare URL","tw","e.g. https://test.yardi.com/client")+fl("Consultant name(s)","con","e.g. Anas Takala, Rajat Agarwal","text",{full:true})+fl("Service Manager","sm","","select",{opts:["Yes","No"]})+fl("PI list notes","pi","e.g. As per attached list")+'</div><hr class="div"><div class="lbl">Databases to create (click to toggle)</div><div class="dbs">'+dH+'</div></div>'
+    +'<div class="card"><div class="ct">Module selection (click to toggle)</div><div class="mods">'+mH+'</div></div>'
+    +'<button class="btn bp" onclick="go(1)">Continue →</button></div>';
 }
-
-function p2(){
-  var key="email";var ld=loading[key];
-  return'<div><div class="pt">Cloud environment setup email</div>'
-    +'<div class="ps">Generates a ready-to-send email + downloadable Word document.</div>'
-    +'<div class="card"><div class="ct">Recipients</div><div class="g2">'
-    +fld("To (cloud team)","to","Nereah.Abwao@Yardi.Com")
-    +fld("CC (project team)","cc","Rajat.Agarwal@Yardi.Com, ...")
-    +fld("Special notes","cnotes","e.g. DBs to be copy of AIM GOLD DB.","textarea",{full:true})
-    +'</div></div>'
-    +'<button class="btn bp" '+(ld?'disabled':'')+' onclick="runEmail()">'
-    +(ld?'<span class="spin"></span>&nbsp;Generating...':'Generate email')+'</button>'
-    +outB(key,"Cloud environment email","Cloud_Setup_Email_"+client()+".docx",false)
-    +'<div class="brow"><button class="btn bs" onclick="go(0)">&larr; Back</button>'
-    +'<button class="btn bp" onclick="go(2)">Continue &rarr;</button></div></div>';
-}
-
-function p3(){
-  var key="agenda";var ld=loading[key];
-  var rowH=tRows.map(function(r,i){
-    return'<div class="tr"><input value="'+esc(r)+'" oninput="tRows['+i+']=this.value" placeholder="Name &mdash; Role (e.g. Anas Takala &mdash; Business Consultant)">'
-      +'<button class="rm" onclick="rmTeam('+i+')">&#10005;</button></div>';
-  }).join("");
-  return'<div><div class="pt">BPR session agenda</div>'
-    +'<div class="ps">Generates a day-by-day session schedule + downloadable Word document.</div>'
-    +'<div class="card"><div class="ct">Session schedule</div><div class="g2">'
-    +fld("Start date","bFrom","","date")
-    +fld("End date","bUntil","","date")
-    +fld("Daily start time","sTime","10:00 AM")
-    +fld("Hours per session","sDur","3")
-    +'</div></div>'
-    +'<div class="card"><div class="ct">Yardi team members</div>'+rowH
-    +'<button class="al" onclick="addTeam()">+ Add member</button></div>'
-    +'<button class="btn bp" '+(ld?'disabled':'')+' onclick="runAgenda()">'
-    +(ld?'<span class="spin"></span>&nbsp;Generating...':'Generate agenda')+'</button>'
-    +outB(key,"BPR session agenda","BPR_Agenda_"+client()+".docx",false)
-    +'<div class="brow"><button class="btn bs" onclick="go(1)">&larr; Back</button>'
-    +'<button class="btn bp" onclick="go(3)">Continue &rarr;</button></div></div>';
-}
-
+function p2(){return'<div><div class="pt">Cloud environment setup email</div><div class="ps">Click the button below to generate and download a formatted Word document.</div><div class="card"><div class="ct">Recipients</div><div class="g2">'+fl("To (cloud team)","to","Nereah.Abwao@Yardi.Com")+fl("CC (project team)","cc","Rajat.Agarwal@Yardi.Com, ...")+fl("Special notes","cn","e.g. DBs to be copy of AIM GOLD DB.","textarea",{full:true})+'</div></div>'+ldBtn("email","Email .docx","genEmail()")+'<div class="brow"><button class="btn bs" onclick="go(0)">← Back</button><button class="btn bp" onclick="go(2)">Continue →</button></div></div>';}
+function p3(){var rH=tr.map(function(r,i){return'<div class="tr"><input value="'+esc(r)+'" oninput="tr['+i+']=this.value" placeholder="Name — Role"><button class="rm" onclick="rt('+i+')">✕</button></div>';}).join("");return'<div><div class="pt">BPR session agenda</div><div class="ps">Click to generate and download a formatted Word document (landscape, A4).</div><div class="card"><div class="ct">Session schedule</div><div class="g2">'+fl("Start date","bf","","date")+fl("End date","bu","","date")+fl("Daily start time","st","10:00 AM")+fl("Hours per session","sd","3")+'</div></div><div class="card"><div class="ct">Yardi team members</div>'+rH+'<button class="al" onclick="at()">+ Add member</button></div>'+ldBtn("agenda","Agenda .docx","genAgenda()")+'<div class="brow"><button class="btn bs" onclick="go(1)">← Back</button><button class="btn bp" onclick="go(3)">Continue →</button></div></div>';}
 function p4(){
-  var tabs=selMods().filter(function(m){return BPR[m.id];});
-  var tabH=tabs.map(function(m){return'<button class="tb'+(bTab===m.id?' on':'')+'" onclick="setBTab(\''+m.id+'\')">'+BPR[m.id].label+'</button>';}).join("");
-  var cur=tabs.find(function(m){return m.id===bTab;});
-  var key="bpr_"+bTab;var ld=loading[key];
-  var body=cur?'<div class="card"><div class="ct">'+BPR[bTab].label+'</div>'
-    +'<div style="margin-bottom:10px"><label class="lbl">Client-specific context (optional)</label>'
-    +'<textarea oninput="bCtx[\''+bTab+'\']=this.value" placeholder="Add any specific requirements or custom notes for this module...">'+(bCtx[bTab]||"")+'</textarea></div>'
-    +'<button class="btn bp" '+(ld?'disabled':'')+' onclick="runBpr(\''+bTab+'\')">'
-    +(ld?'<span class="spin"></span>&nbsp;Generating...':'Generate '+BPR[bTab].label)+'</button></div>'
-    +outB(key,BPR[bTab].label,"BPR_"+bTab+"_"+client()+".docx",false)
-    :'<div class="info">No modules selected. Go back to Step 1.</div>';
-  return'<div><div class="pt">BPR documents</div>'
-    +'<div class="ps">One Word document per module — with version table, requirements, branded header &amp; footer.</div>'
-    +'<div class="info">Generate each tab individually, then click Download .docx for each one.</div>'
-    +'<div class="tbr">'+tabH+'</div>'+body
-    +'<div class="brow"><button class="btn bs" onclick="go(2)">&larr; Back</button>'
-    +'<button class="btn bp" onclick="go(4)">Continue &rarr;</button></div></div>';
+  var tabs=sm().filter(function(m){return TREQS[m.id];});
+  var tH=tabs.map(function(m){return'<button class="tb'+(bt===m.id?' on':'')+'" onclick="sbt(\''+m.id+'\')">'+TN[m.id]+'</button>';}).join("");
+  var cur=tabs.find(function(m){return m.id===bt;});
+  var body=cur?'<div class="card"><div class="ct">'+TN[bt]+' BPR <span style="font-size:10px;color:#888;font-weight:400">— follows your uploaded template exactly</span></div><div style="margin-bottom:10px"><label class="lbl">Additional client-specific notes (optional)</label><textarea oninput="bc[\''+bt+'\']=this.value" placeholder="e.g. Client has 150 vendors, uses EFT only, 3-level approval DOA...">'+(bc[bt]||"")+'</textarea></div>'+ldBtn("bpr_"+bt,TN[bt]+" .docx","genBpr('"+bt+"')")+'</div>':'<div class="info">No modules selected. Go back to Step 1.</div>';
+  return'<div><div class="pt">BPR documents</div><div class="ps">Each module generates a complete Word document following your real uploaded template.</div><div class="info">📄 Structure: Version Control → Sign Off → Copyright → Overview → Requirements Table → Additional Requirements → RFI reference. "XX" replaced with client name throughout.</div><div class="tbr">'+tH+'</div>'+body+'<div class="brow"><button class="btn bs" onclick="go(2)">← Back</button><button class="btn bp" onclick="go(4)">Continue →</button></div></div>';
 }
-
-function p5(){
-  var key="rfi";var ld=loading[key];
-  return'<div><div class="pt">RFI collection sheet</div>'
-    +'<div class="ps">Downloads as Excel with Cover page, Index, and one tab per module — colour-coded by priority.</div>'
-    +'<div class="card"><div class="ct">Configuration</div><div class="g2">'
-    +fld("Project focal point","focal","e.g. John Smith")
-    +fld("Target completion date","dl","","date")
-    +fld("Instructions for client","rnotes","e.g. Please fill Critical items before first BPR session.","textarea",{full:true})
-    +'</div></div>'
-    +'<div class="brow">'
-    +'<button class="btn bp" '+(ld?'disabled':'')+' onclick="runRfi()">'+(ld?'<span class="spin"></span>&nbsp;Generating...':'Generate RFI index')+'</button>'
-    +(texts[key]&&!texts[key].startsWith("Error:")?'<button class="btn bg" onclick="dlXls()">&#8595; Download .xlsx</button>':'')
-    +'</div>'
-    +outB(key,"RFI collection index","RFI_"+client()+".xlsx",true)
-    +'<div class="brow"><button class="btn bs" onclick="go(3)">&larr; Back</button>'
-    +'<button class="btn bp" onclick="go(5)">Continue &rarr;</button></div></div>';
-}
-
+function p5(){return'<div><div class="pt">RFI collection sheet</div><div class="ps">Generates a real Excel file matching your original RFI template — same columns, filtered to selected modules.</div><div class="card"><div class="ct">Configuration</div><div class="g2">'+fl("Project focal point","fo","e.g. John Smith")+fl("Target completion date","dl","","date")+fl("Instructions for client","rn","e.g. Please fill Critical items before first BPR session.","textarea",{full:true})+'</div></div>'+ldBtn("rfi","RFI .xlsx","genRfi()")+'<div class="brow"><button class="btn bs" onclick="go(3)">← Back</button><button class="btn bp" onclick="go(5)">Continue →</button></div></div>';}
 function p6(){
-  var delivs=[
-    {key:"email", label:"Cloud setup email",    step:1,xlsx:false,fname:"Cloud_Setup_Email_"+client()+".docx"},
-    {key:"agenda",label:"BPR session agenda",   step:2,xlsx:false,fname:"BPR_Agenda_"+client()+".docx"},
-  ];
-  selMods().filter(function(m){return BPR[m.id];}).forEach(function(m){
-    delivs.push({key:"bpr_"+m.id,label:BPR[m.id].label,step:3,xlsx:false,fname:"BPR_"+m.id+"_"+client()+".docx"});
-  });
-  delivs.push({key:"rfi",label:"RFI collection sheet",step:4,xlsx:true,fname:"RFI_"+client()+".xlsx"});
-  var rdy=delivs.filter(function(d){return texts[d.key]&&!texts[d.key].startsWith("Error:");}).length;
-  var stats='<div class="rg">'
-    +[["Client",client()],["Modules",selMods().length+" selected"],["Ready",rdy+" / "+delivs.length]].map(function(p){
-      return'<div class="sc"><div class="sl">'+p[0]+'</div><div class="sv">'+p[1]+'</div></div>';
-    }).join("")+'</div>';
-  var cards=delivs.map(function(d){
-    var ok=!!(texts[d.key]&&!texts[d.key].startsWith("Error:"));
-    return'<div class="dc"><div class="dh"><span class="dn">'+d.label+'</span>'
-      +'<span class="bk '+(ok?"bok":"bpn")+'">'+(ok?"Ready":"Pending")+'</span></div>'
-      +'<div class="dd">'+(ok?"Click to download.":"Go back and generate first.")+'</div>'
-      +(ok?'<div style="display:flex;gap:5px">'
-        +'<button class="btn bs" style="font-size:11px;padding:4px 10px" onclick="navigator.clipboard.writeText(texts[\''+d.key+'\']).then(function(){alert(\'Copied!\')})">Copy</button>'
-        +'<button class="btn bg" style="font-size:11px;padding:4px 10px" onclick="'+(d.xlsx?'dlXls()':'dlDocx(\''+d.key+'\',\''+d.fname+'\')')+'">.'+(d.xlsx?"xlsx":"docx")+'</button></div>'
-        :'<button class="btn bp" style="font-size:11px;padding:4px 10px" onclick="go('+d.step+')">Go to step '+(d.step+1)+'</button>')
-      +'</div>';
-  }).join("");
-  return'<div><div class="pt">Review &amp; export all deliverables</div>'
-    +'<div class="ps">All outputs for '+client()+'.</div>'
-    +stats+'<div class="dg">'+cards+'</div>'
-    +'<div class="brow"><button class="btn bs" onclick="go(4)">&larr; Back</button></div></div>';
+  var ds=[{key:"email",lb:"Cloud Setup Email .docx",step:1,fn:"genEmail()"},{key:"agenda",lb:"BPR Session Agenda .docx",step:2,fn:"genAgenda()"}];
+  sm().filter(function(m){return TREQS[m.id];}).forEach(function(m){ds.push({key:"bpr_"+m.id,lb:TN[m.id]+" BPR .docx",step:3,fn:"genBpr('"+m.id+"')"});});
+  ds.push({key:"rfi",lb:"RFI Collection Sheet .xlsx",step:4,fn:"genRfi()"});
+  var rdy=ds.filter(function(d){return done.has(d.step);}).length;
+  var stats='<div class="rg">'+[["Client",cl()],["Modules",sm().length+" selected"],["Downloaded",rdy+" / "+ds.length]].map(function(p){return'<div class="sc"><div class="sl">'+p[0]+'</div><div class="sv">'+p[1]+'</div></div>';}).join("")+'</div>';
+  var cards=ds.map(function(d){var ok=done.has(d.step),ld=loading[d.key];return'<div class="dc"><div class="dh"><span class="dn">'+d.lb+'</span><span class="bk '+(ok?"bok":"bpn")+'">'+(ok?"✓ Downloaded":"Pending")+'</span></div><div class="dd">'+(ok?"File downloaded to your Downloads folder.":"Generate from the relevant step.")+'</div><button class="btn '+(ok?"bg":"bp")+'" style="font-size:11px;padding:5px 11px" '+(ld?"disabled":"")+' onclick="'+d.fn+'">'+(ld?'<span class="spin"></span>':ok?"↓ Re-download":"↓ Generate & Download")+'</button></div>';}).join("");
+  return'<div><div class="pt">Review &amp; download all files</div><div class="ps">All deliverables for '+cl()+'. Each button generates and downloads the real file.</div>'+stats+'<div class="dg">'+cards+'</div><div class="brow"><button class="btn bs" onclick="go(4)">← Back</button></div></div>';
 }
-
-function runEmail(){
-  gen("email",1,
-    "You are a Yardi Implementation Consultant writing a professional email to the cloud team. Plain text only, no markdown. Use dash bullet points.",
-    "Write a cloud environment readiness request email.\nTO: "+F.to+"\nCC: "+(F.cc||"[Project Team]")+"\nFROM: "+(F.consultant||"[Consultant]")+" | Yardi Consultant\nClient: "+client()+" | PIN: "+F.pin+"\nLive webshare: "+(F.liveWS||"TBD")+"\nTest webshare: "+(F.testWS||"TBD")+"\nDatabases: "+Array.from(aDbs).join(", ")+"\nTimezone: "+(F.tz||"TBD")+"\nSource DB: "+(F.srcDB||"To be confirmed")+"\nPIs: "+(F.pi||"As per standard list")+"\nService Manager: "+F.sm+(F.cnotes?"\nNotes: "+F.cnotes:"")+"\n\nWrite the full email with: Subject line (prefix Subject:), professional greeting, short intro, sections with dash bullet points for each detail, and a professional signature for "+(F.consultant||"[Consultant]")+"."
-  );
-}
-
-function runAgenda(){
-  var team=tRows.filter(function(r){return r.trim();}).join("; ")||"Yardi Implementation Team";
-  gen("agenda",2,
-    "You are a Yardi Implementation Consultant. Generate a BPR session agenda as a plain text table with columns separated by |.",
-    "BPR session agenda:\nClient: "+client()+"\nModules: "+selMods().map(function(m){return m.name;}).join(", ")+"\nDates: "+(F.bFrom||"TBD")+" to "+(F.bUntil||"TBD")+"\nDaily start: "+F.sTime+" | Hours/day: "+F.sDur+"\nTeam: "+team+"\n\nCreate a day-by-day table:\nDay & Date | Time | Hours | Business Topics | Suggested Attendees\n\nDay 1 = kickoff. Allocate days to modules. Final day = open items. Use real dates."
-  );
-}
-
-function runBpr(id){
-  var mod=MODS.find(function(m){return m.id===id;});
-  var pref=id.toUpperCase();
-  gen("bpr_"+id,3,
-    "You are a senior Yardi Implementation Consultant generating BPR documents. Plain text, structured. Use pipe-separated tables for requirements.",
-    "Generate BPR for "+mod.name+" — Client: "+client()+"\nSections: "+BPR[id].sec+"\n\nStructure:\n1. BPR DOCUMENT – "+mod.name.toUpperCase()+" – "+client().toUpperCase()+"\n2. Version Control: Version | Date | Author | Status (row: 1.0 | "+todayStr()+" | "+(F.consultant||"Yardi Consultant")+" | Draft)\n3. Overview: 2 sentences\n4. REQUIREMENTS TABLE: Ref | Topic | Requirement (12 rows, codes "+pref+"-001 etc., mark client items 'To be confirmed in RFI')\n5. Additional Requirements section\n6. RFI Items: Refer to RFI Collection Sheet on SharePoint.\n7. Copyright Yardi Systems Inc. "+new Date().getFullYear()+"."+(bCtx[id]?"\nContext: "+bCtx[id]:"")
-  );
-}
-
-function runRfi(){
-  var mods=selMods();
-  var items=mods.map(function(m){return m.name+":\n"+(RFI[m.id]||[]).map(function(r,i){return"  "+(i+1)+". "+r[0]+" ["+r[1]+"]";}).join("\n");}).join("\n\n");
-  gen("rfi",4,
-    "You are a Yardi Implementation Consultant generating an RFI index. Plain text table format.",
-    "RFI Sheet for: "+client()+"\nFocal: "+(F.focal||"Project Team")+" | Deadline: "+(F.dl||"TBD")+"\nModules: "+mods.map(function(m){return m.name;}).join(", ")+(F.rnotes?"\nInstructions: "+F.rnotes:"")+"\n\nItems:\n"+items+"\n\nGenerate numbered table:\nSr.No | Module | Requirement | Department | Priority | Target Date | Status\n\nAdd (ETL - Data Template Required) to data upload items. End with escalation note."
-  );
-}
-
-async function dlDocx(key,fname){
-  if(!texts[key]||texts[key].startsWith("Error:"))return;
-  loading[key+"_dl"]=true;render();
-  try{
-    var d=docx;
-    var BLUE="185FA5",GR="5F5E5A",DK="2C2C2A",WH="FFFFFF";
-    var bd={style:d.BorderStyle.SINGLE,size:1,color:"CCCCCC"};
-    var bds={top:bd,bottom:bd,left:bd,right:bd};
-    var hbd={style:d.BorderStyle.SINGLE,size:1,color:BLUE};
-    var hbds={top:hbd,bottom:hbd,left:hbd,right:hbd};
-    function mkCell(t,w,isH,shade){
-      return new d.TableCell({borders:isH?hbds:bds,width:{size:w,type:d.WidthType.DXA},
-        shading:{fill:isH?BLUE:(shade||WH),type:d.ShadingType.CLEAR},
-        margins:{top:80,bottom:80,left:120,right:120},
-        verticalAlign:d.VerticalAlign.CENTER,
-        children:[new d.Paragraph({children:[new d.TextRun({text:String(t||""),font:"Arial",size:20,bold:!!isH,color:isH?WH:DK})]})]});
-    }
-    var lines=texts[key].split("\n");
-    var children=[];
-    children.push(new d.Paragraph({alignment:d.AlignmentType.CENTER,spacing:{before:0,after:140},
-      children:[new d.TextRun({text:fname.replace(/_/g," ").replace(/\.docx$/,""),bold:true,font:"Arial",size:26,color:BLUE})]}));
-    children.push(new d.Paragraph({alignment:d.AlignmentType.CENTER,spacing:{before:0,after:80},
-      children:[new d.TextRun({text:client()+" | "+todayStr(),font:"Arial",size:20,color:GR})]}));
-    children.push(new d.Paragraph({border:{bottom:{style:d.BorderStyle.SINGLE,size:6,color:BLUE,space:1}},spacing:{before:80,after:80},children:[]}));
-    var tbuf=[];
-    function flushT(){
-      if(!tbuf.length)return;
-      var cols=tbuf.reduce(function(mx,r){return Math.max(mx,r.length);},0);
-      var cw=Math.floor(9360/Math.max(cols,1));
-      var cws=Array(cols).fill(cw);
-      children.push(new d.Table({width:{size:9360,type:d.WidthType.DXA},columnWidths:cws,
-        rows:tbuf.map(function(row,ri){
-          return new d.TableRow({tableHeader:ri===0,children:row.map(function(c,ci){return mkCell(c,cws[ci]||cw,ri===0,ri%2===1?"F5F5F5":null);})});
-        })}));
-      children.push(new d.Paragraph({spacing:{before:60,after:40},children:[]}));
-      tbuf=[];
-    }
-    for(var i=0;i<lines.length;i++){
-      var t=lines[i].trim();
-      if(t.indexOf("|")!==-1&&t.split("|").length>=3){
-        var cells=t.split("|").map(function(c){return c.trim();}).filter(function(c){return c&&!/^[-\s]+$/.test(c);});
-        if(cells.length>=2){tbuf.push(cells);continue;}
-      }else flushT();
-      if(!t){children.push(new d.Paragraph({spacing:{before:28,after:28},children:[]}));continue;}
-      var isH=/^[A-Z][A-Z\s&\/\-\.0-9]{3,}[:\.]?\s*$/.test(t)&&t.length<70&&t.indexOf("@")===-1&&t.indexOf("|")===-1;
-      var clean=t.replace(/^#+\s*/,"").replace(/\*\*/g,"");
-      children.push(new d.Paragraph({spacing:{before:isH?110:28,after:isH?44:28},
-        children:[new d.TextRun({text:clean,font:"Arial",size:isH?22:20,bold:isH,color:isH?BLUE:DK})]}));
-    }
-    flushT();
-    children.push(new d.Paragraph({spacing:{before:140,after:0},children:[]}));
-    children.push(new d.Paragraph({border:{top:{style:d.BorderStyle.SINGLE,size:4,color:BLUE,space:1}},alignment:d.AlignmentType.CENTER,spacing:{before:44,after:0},
-      children:[new d.TextRun({text:"\u00A9 "+new Date().getFullYear()+" Yardi Systems, Inc. All rights reserved. Confidential.",font:"Arial",size:16,color:GR})]}));
-    var doc=new d.Document({
-      styles:{default:{document:{run:{font:"Arial",size:22}}}},
-      sections:[{properties:{page:{size:{width:12240,height:15840},margin:{top:1440,right:1440,bottom:1440,left:1440}}},
-        headers:{default:new d.Header({children:[new d.Paragraph({alignment:d.AlignmentType.RIGHT,border:{bottom:{style:d.BorderStyle.SINGLE,size:4,color:BLUE,space:1}},children:[new d.TextRun({text:fname.replace(/_/g," ").replace(/\.docx$/,"")+" | "+client()+" | CONFIDENTIAL",font:"Arial",size:18,color:GR})]})]})} ,
-        footers:{default:new d.Footer({children:[new d.Paragraph({alignment:d.AlignmentType.CENTER,border:{top:{style:d.BorderStyle.SINGLE,size:4,color:BLUE,space:1}},children:[new d.TextRun({text:"Yardi Systems | Page ",font:"Arial",size:16,color:GR}),new d.TextRun({children:[d.PageNumber.CURRENT],font:"Arial",size:16,color:GR})]})]})} ,
-        children:children}]
-    });
-    var buf=await d.Packer.toBuffer(doc);
-    var blob=new Blob([buf],{type:"application/vnd.openxmlformats-officedocument.wordprocessingml.document"});
-    var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=fname;a.click();URL.revokeObjectURL(a.href);
-  }catch(e){alert("Error building .docx: "+e.message);}
-  loading[key+"_dl"]=false;render();
-}
-
-function dlXls(){
-  var XL=XLSX;
-  var mods=selMods();
-  var etlK=["template","list","master","schedule","asset","format","attachment"];
-  var wb=XL.utils.book_new();
-  var td=todayStr();
-  var cov=[["RFI COLLECTION SHEET",""],[""],[ client(),""],[""],["Prepared by:",F.consultant||"Yardi Consultant"],["Focal Point:",F.focal||"Project Team"],["Target Date:",F.dl||"TBD"],["Modules:",mods.map(function(m){return m.name;}).join(", ")],["Date:",td],[""],[  "Instructions:",F.rnotes||"Please complete all Critical items before the first BPR session."]];
-  var cWs=XL.utils.aoa_to_sheet(cov);
-  cWs["!cols"]=[{wch:28},{wch:55}];
-  XL.utils.book_append_sheet(wb,cWs,"Cover");
-  var iHdr=["Sr.No","Module","Requirement / Information Needed","Department","Priority","Target Date","Shared Date","Status","Remarks"];
-  var iRows=[iHdr];var sr=1;
-  mods.forEach(function(mod){
-    (RFI[mod.id]||[]).forEach(function(r){
-      var etl=etlK.some(function(k){return r[0].toLowerCase().indexOf(k)!==-1;})?" (ETL \u2013 Data Template Required)":"";
-      iRows.push([sr++,mod.name,r[0]+etl,"",r[1],F.dl||"TBD","","Pending",""]);
-    });
-  });
-  var iWs=XL.utils.aoa_to_sheet(iRows);
-  iWs["!cols"]=[{wch:7},{wch:22},{wch:48},{wch:18},{wch:12},{wch:14},{wch:14},{wch:14},{wch:24}];
-  XL.utils.book_append_sheet(wb,iWs,"Index");
-  mods.forEach(function(mod){
-    var hdr=["Sr.No","Requirement / Information Needed","Department","Priority","Target Date","Shared Date","Status","Remarks"];
-    var rows=[hdr];
-    (RFI[mod.id]||[]).forEach(function(r,i){
-      var etl=etlK.some(function(k){return r[0].toLowerCase().indexOf(k)!==-1;})?" (ETL \u2013 Data Template Required)":"";
-      rows.push([i+1,r[0]+etl,"",r[1],F.dl||"TBD","","Pending",""]);
-    });
-    var ws=XL.utils.aoa_to_sheet(rows);
-    ws["!cols"]=[{wch:7},{wch:50},{wch:18},{wch:12},{wch:14},{wch:14},{wch:14},{wch:24}];
-    XL.utils.book_append_sheet(wb,ws,mod.name.substring(0,28));
-  });
-  XL.writeFile(wb,"RFI_"+client().replace(/\s+/g,"_")+".xlsx");
-}
-
-render();
+re();
 </script>
 </body>
 </html>
