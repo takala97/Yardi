@@ -28,7 +28,7 @@ body{background:#f0f2f5;min-height:100vh;display:flex;align-items:flex-start;jus
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .lbl{font-size:11px;color:#555;margin-bottom:3px;display:block;font-weight:500}
 input,select,textarea{width:100%;border:1px solid #ddd;border-radius:6px;padding:6px 9px;font-size:12px;color:#222;background:#fff;outline:none;font-family:inherit}
-input:focus,select:focus,textarea:focus{border-color:#185FA5;box-shadow:0 0 0 2px rgba(24,95,165,.1)}
+input:focus,select:focus,textarea:focus{border-color:#185FA5}
 textarea{resize:vertical;min-height:52px;line-height:1.5}
 .full{grid-column:1/-1}
 .mods{display:grid;grid-template-columns:1fr 1fr;gap:8px}
@@ -40,11 +40,12 @@ textarea{resize:vertical;min-height:52px;line-height:1.5}
 .dbs{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
 .db{font-size:11px;padding:3px 10px;border-radius:20px;cursor:pointer;font-weight:500;user-select:none}
 .db.on{background:#185FA5;color:#fff}.db.off{background:#dbeafe;color:#1e40af;border:1px solid #bfdbfe}
-.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;border:none;font-family:inherit;transition:opacity .15s}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;border:none;font-family:inherit}
 .btn:disabled{opacity:.5;cursor:not-allowed}
-.bp{background:#185FA5;color:#fff}.bs{background:#f3f4f6;color:#374151;border:1px solid #d1d5db}.bg{background:#16a34a;color:#fff}
+.bp{background:#185FA5;color:#fff}.bs{background:#f3f4f6;color:#374151;border:1px solid #d1d5db}.bg{background:#16a34a;color:#fff}.bw{background:#f59e0b;color:#fff}
 .brow{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;align-items:center}
 .info{font-size:11px;color:#1e40af;background:#dbeafe;border-radius:6px;padding:7px 10px;margin-bottom:10px}
+.warn{font-size:11px;color:#92400e;background:#fef3c7;border-radius:6px;padding:7px 10px;margin-bottom:10px}
 .tbr{display:flex;flex-wrap:wrap;border-bottom:1px solid #e5e7eb;margin-bottom:12px}
 .tb{padding:6px 12px;font-size:11px;cursor:pointer;background:none;border:none;border-bottom:2px solid transparent;color:#6b7280;font-weight:500;font-family:inherit;margin-bottom:-1px}
 .tb:hover{color:#185FA5}.tb.on{color:#185FA5;border-bottom-color:#185FA5}
@@ -64,9 +65,9 @@ textarea{resize:vertical;min-height:52px;line-height:1.5}
 hr.div{border:none;border-top:1px solid #e8e8e8;margin:12px 0}
 .spin{display:inline-block;width:12px;height:12px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-.sbar{margin-top:12px;padding:10px 14px;border-radius:8px;font-size:12px;display:flex;align-items:center;gap:10px}
-.sok{background:#dcfce7;color:#166534;border:1px solid #bbf7d0}
-.serr{background:#fee2e2;color:#dc2626;border:1px solid #fecaca}
+.ghcard{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:14px 16px;margin-bottom:12px}
+.ghcard .ct{color:#166534}
+.step-label{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:#185FA5;color:#fff;font-size:10px;font-weight:700;margin-right:6px;flex-shrink:0}
 </style>
 </head>
 <body>
@@ -84,34 +85,40 @@ hr.div{border:none;border-top:1px solid #e8e8e8;margin:12px 0}
     <div class="main" id="main"></div>
   </div>
 </div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
 <script>
-// ── Data from your real uploaded templates ────────────────────────────────────
+// ── CONFIGURATION — update this with your GitHub details ──────────────────────
+var GITHUB_USER   = "takala97";       // e.g. "anastakala"
+var GITHUB_REPO   = "yardi";                // your repository name
+var GITHUB_BRANCH = "main";
+// Template file names exactly as stored in your GitHub repo
+var TEMPLATES = {
+  vc:  "01-_Business_Process_Requirement_-_Vendor_Cafe.docx",
+  p2p: "02-_Business_Process_Requirement_-_Procure_to_Pay.docx",
+  fa:  "03_-_Business_Process_Requirement_-_FA.docx",
+  wo:  "04_-_Business_Process_Requirement_-_Work_Orders.docx",
+  fm:  "05-_Business_Process_Requirement_-_Inspection_and_PPM.docx",
+  rfi: "RFI_Collection_Sheet.xlsx"
+};
+// ─────────────────────────────────────────────────────────────────────────────
+
 var MODS=[{id:"vc",name:"Vendor Cafe",desc:"Vendor onboarding & portal"},{id:"p2p",name:"Procure to Pay",desc:"PR/PO, invoices, payments"},{id:"fa",name:"Fixed Asset Manager",desc:"Assets & depreciation"},{id:"wo",name:"Work Orders",desc:"FM work orders"},{id:"fm",name:"Inspection & PPM",desc:"Inspections, PPM"}];
 var DBS=["Live","Test","UAT","Training","DM Test","CommCafe"];
-var STEPS=["Project & Modules","Cloud Email","BPR Agenda","BPR Documents","RFI Sheet","Review & Export"];
+var STEPS=["Setup","Project & Modules","Cloud Email","BPR Agenda","BPR Documents","RFI Sheet","Review"];
 var TN={vc:"Vendor Cafe",p2p:"Procure to Pay",fa:"Fixed Assets",wo:"Work Orders",fm:"Inspection & PPM"};
-
-var TREQS={
-vc:[["","Departments involved in short listing Vendors","Individual Departments can recommend vendors. Maintenance Vendors recommended by FM Manager. Petty cash vendors picked directly by the buyer."],["","Number of Active Vendors in the Legacy system","To be filled in RFI sheet"],["","Vendor Markets (Local / International)","To be filled in RFI sheet"],["","Vendor Categories","To be filled in RFI sheet"],["","Vendor Insurance types required per Vendor category","To be filled in RFI sheet"],["","Vendor Approval process per category – Approval DOA","To be filled in RFI sheet"],["","Mandatory documents for Vendor Registration","To be filled in RFI sheet"],["","Vendor Profile Review and Approval – Level 1 (Vendor Café) and Level 2 (P2P)","To be filled in RFI sheet"],["","Registration process for Existing Vendors","Bulk invitation emails dispatched. Level 2 approval not required for migrated vendors."],["","Scenarios where Vendors will NOT be registered for Vendor Portal","Utility vendors (DEWA, ADEWA), Government entities, Petty Cash Vendors, Employees"],["","Vendor Payment methods","To be filled in RFI sheet – Cheque, EFT, Cash, Bank Transfer, Credit Card"],["","Additional Fields for Vendor master","To be filled in RFI sheet"],["","Vendor Agreement","To be filled in RFI sheet"],["","Vendor Café Configurations","To be filled in RFI sheet"],["","Email Templates","To be filled in RFI sheet"],["","Support Details for Vendors (phone, email)","To be filled in RFI sheet"],["","Vendor Café TRN – Email combination scenarios","Distinct Email IDs and TRN numbers recommended per vendor."]],
-p2p:[["","Procure to Pay process overview","PR raised by FM Manager or Property Admin → PO approved by GM → Finance review → PO released to Vendor Café → GRN → Invoice → Payment"],["","P2P Team structure (PO creator, GRN, Invoicing, Payments)","FM Manager, Property Admin, Property Manager, General Manager, Finance Manager, AP Accountant"],["","List of Expense Types to be configured","To be filled in RFI sheet"],["","DOA/workflow for PR/PO approval","To be filled in RFI sheet"],["","PO Attachment Types","To be filled in RFI sheet"],["","Who will enter AP Invoice?","AP Accountant (Elevate), Vendor (Vendor Café), FM Manager (after GRN)"],["","Invoice types without PO (Direct invoices)","Cash Purchases, Utilities, Legal expenses, Dubai Civil Defence, AMC Invoices"],["","Invoice processing across multiple properties","Allowed across multiple properties under same Legal entity"],["","DOA/workflow for Invoice approval","To be filled in RFI sheet"],["","Invoice Attachment Types","To be filled in RFI sheet"],["","Direct Payable Attachment Types","To be filled in RFI sheet"],["","Payment methods – Cheque, EFT, bank details","To be filled in RFI sheet"],["","DOA/workflow for Payment approval","To be filled in RFI sheet"],["","Advance payments to vendor","To be filled in RFI sheet. 95% cases: tax invoice received. 5%: proforma – AP control account used."],["","PO Accrual process","Open PO with GRN but not invoiced. Partial GRN. AMC PO accrual regardless of GRN."],["","Credit Notes","Raised by Vendor in Vendor Café or by Finance in Yardi. Adjusted against vendor payments."],["","Service Contract process and DOA","To be filled in RFI sheet"]],
-fa:[["","Number of Assets and current tracking method","To be confirmed. Estate property tracked in Oracle."],["","Asset Groups","To be filled in the RFI sheet"],["","Asset Types","To be filled in the RFI sheet"],["","Depreciation Conventions and Methods","Method: Straight line. Convention: Daily Calculation. Posting: Monthly"],["","How Assets are created","Procurement flow (PR→PO→GRN→Capitalization by Finance) or Direct Creation by FM. Bulk upload via ETL."],["","Asset revaluation (up/down)","Done by landlord then shared with Finance to modify book value."],["","Depreciation calculation frequency","Daily Calculation, Monthly Posting"],["","Asset Lifecycle Transactions","Purchase, Depreciation, Transfer, Sale, Replacement, Impairment, Reclassify, Derecognition, Split, Merge"],["","Asset Warranty","Yes – warranty information maintained on each asset"],["","Asset Auto Code – Prefix per asset type","Yes – prefix and sequence based on Asset Type selected"],["","Asset Barcode","Asset barcode added to each asset for tracking"]],
-wo:[["","Maintenance Business Models supported","To be filled in RFI sheet – In-house, Outsourcing Contractual, Non-Contractual, Out of Scope, Major WO, Work Permit"],["","Team Structure and Roles","FM Manager, FM Engineer, Supervisor, Technician, Storekeeper, HSE Officer, FM Admin, CAFM Planners"],["","FM working days and shifts","7:30 AM to 2:30 PM (Sunday to Thursday)"],["","In-House Servicing WO Status Lifecycle","Call → Call → Scheduled → In Progress → Material Required → Material Released → Ready to Close → Work Completed"],["","Outsourcing Contractual WO Status Lifecycle","Call → Scheduled → Assigned to Vendor → Vendor Completed → Work Completed"],["","WO Priority configuration","To be filled in RFI sheet"],["","WO Status and Change Reasons","To be filled in RFI sheet"],["","WO Categories and Subcategories","To be filled in RFI sheet"],["","WO Attachments","To be filled in RFI sheet"],["","WO SLA KPI and Due Date Defaults","To be filled in RFI sheet"],["","Employee Skills","To be filled in RFI sheet"],["","Work Order Roles and Workflow","To be filled in RFI sheet"],["","WO Configuration Points","To be filled in RFI sheet"]],
-fm:[["","High level overview of Inspection process","One Time Setup: Templates, Types (Patient Move-Out, Incident Recording, Utility, Adhoc). Ongoing: Adhoc & Recurring Inspections."],["","Inspection Objects","Property, Building, Common Areas"],["","Types of Inspections","Adhoc: Patient Move-Out, Incident Recording. Recurring: Utility, General."],["","Inspection working hours","Morning 08:00–13:00 (max 50). Afternoon 13:00–18:00 (max 50)."],["","Who fixes failed inspection items","Maintenance Contractor (in case of AMC)"],["","Inspection related setups","To be filled in RFI sheet"],["","Inspection Statuses","To be filled in RFI sheet – Fail, Cancel, Needs Approval, In Progress, Completed, On Hold"],["","Inspection Templates","To be filled in the ETLs"],["","PPM Objects","Equipment"],["","High level overview of PPM process","PPMs posted per frequency. Types: PPM Inspections (Vendors per Service Contract) and PPM Verification (In-House). Vendor payments after snag rectification."],["","Departments involved in PPM","AMC Vendors"],["","PPM Types and Setup","To be filled in the ETLs"]]};
-
-var TTITLES={vc:"VENDOR CAFÉ",p2p:"PROCURE TO PAY",fa:"FIXED ASSETS",wo:"FM – WORK ORDERS",fm:"FM – INSPECTION AND PPM"};
-var TSUB={vc:"Vendor Cafe",p2p:"Procure to Pay",fa:"Fixed Assets",wo:"Facilities Management – Work Orders",fm:"Facilities Management – Inspection and PPM"};
-var TOV={vc:"The purpose of this document is to provide insight to {C} Business Processes and System requirements for Vendor Cafe. Yardi will use these responses to prepare a list of further interview questions and discussion sessions.",p2p:"The purpose of this document is to provide insight to the {C} business processes and system requirements. Yardi will use these responses to prepare a list of further interview questions and discussion sessions.",fa:"The purpose of this document is to provide insight to the {C} Business Processes and System requirements for Fixed Assets. Yardi will use these responses to prepare a list of further interview questions and discussion sessions.",wo:"The purpose of this document is to provide insight to {C} Business Processes and System requirements for Facilities Management – Work orders. Yardi will use these responses to prepare a list of further interview questions and discussion sessions.",fm:"The purpose of this document is to provide insight to {C} Business Processes and System requirements for Facilities Management – Inspection and PPM. Yardi will use these responses to prepare a list of further interview questions and discussion sessions."};
-
-var RROWS=[[1,"Vendor Café","P2P3","Vendor Markets","Procurement","High"],[2,"Vendor Café","P2P4,P2P5","Vendor Categories and Insurance Types","Procurement","High"],[3,"Vendor Café","P2P6,P2P8","Vendor Workflow / Approval DOA","Procurement","Critical"],[4,"Vendor Café","P2P7","Mandatory Documents for Vendor Registration","Procurement","Low"],[5,"Vendor Café","P2P14","Vendor User Defined Fields","Procurement","High"],[6,"Vendor Café","P2P15","Vendor Agreement","Procurement","Low"],[7,"Vendor Café","P2P16","Vendor Cafe Configurations","Procurement","Low"],[8,"Vendor Café","P2P17","VC Email Templates","Procurement","Low"],[9,"Vendor Café","P2P19","Support Numbers / Email","Procurement","High"],[10,"Vendor Café","","EFT Format","Finance","Low"],[11,"P2P","AP1.1","Person Creating PO","Procurement","High"],[12,"P2P","AP1.1","Person Creating Invoice","Finance","High"],[13,"P2P","AP1.3","List of Expense Types","Procurement","Critical"],[14,"P2P","AP1.4","PR and PO Approval Workflow","Procurement","Critical"],[15,"P2P","AP1.5","PO Attachment Types","Procurement","High"],[16,"P2P","AP1.6","Invoice Approval DOA","Finance","Critical"],[17,"P2P","AP1.7","Invoice Attachment Types","Finance","High"],[18,"P2P","AP1.10","Direct Payable Attachment Types","Finance","High"],[19,"P2P","AP1.11","Fields for EFT on Bank Record","Finance","High"],[20,"P2P","AP1.11","Invoice Payment Methods","Finance","High"],[21,"P2P","AP1.12","Payments Approval DOA (GL Disbursement)","Finance","Critical"],[22,"P2P","AP1.13","Payment Attachment Types","Finance","High"],[23,"P2P","Additional","Process for Cancelling PO","Procurement","High"],[24,"P2P","Additional","Terms & Conditions on PO","Procurement","High"],[25,"P2P","","PO User Defined Fields","Procurement","High"],[26,"P2P Services","AP4.2","Service Contract DoA","Procurement","Critical"],[27,"P2P Services","","Service Contract Business Types","Procurement","High"],[28,"P2P Services","AP4.3","Service Contract Attachments","Procurement","High"],[29,"Fixed Assets","FA2","Asset Groups","Finance","High"],[30,"Fixed Assets","FA3","Asset Types","Finance","High"],[31,"Fixed Assets","FA4","Asset Depreciation Groups","Finance","High"],[32,"Fixed Assets","FA13","Fixed Asset Attachments","Finance","High"],[33,"Fixed Assets","","Asset Process Details","Finance","High"],[34,"Facility Manager","FM1","Maintenance Models","Facility Management",""],[35,"Facility Manager","FM2","Team Structure","Facility Management",""],[36,"Facility Manager","FM3","Employee Time Slots","Facility Management",""],[37,"Facility Manager","FM8,FM9","WO Priority","Facility Management",""],[38,"Facility Manager","FM10,FM11","WO Status and Change Reason","Facility Management",""],[39,"Facility Manager","FM7","WO Category and Subcategories","Facility Management",""],[40,"Facility Manager","FM12","WO Attachments","Facility Management",""],[41,"Facility Manager","","WO SLA KPI and Due Date Defaults","Facility Management",""],[42,"Facility Manager","","Employee Skills","Facility Management",""],[43,"Facility Manager","","Work Order Roles and Workflow","Facility Management",""],[44,"Facility Manager","FM18","WO Config Points","Facility Management",""],[45,"Facility Manager","IN1","Inspection Process","Facility Management",""],[46,"Facility Manager","IN8","Inspection Statuses","Facility Management",""],[47,"Facility Manager","PPM2","PM Process","Facility Management",""],[48,"Facility Manager","IN8","PM Statuses","Facility Management",""],[49,"Facility Manager","IN7","Inspections & PPM Config Points","Facility Management",""],[50,"Facility Manager","","Auto Assignment Rules","Facility Management",""],[51,"Facility Manager","","PPM Checklists","Facility Management","ETL"],[52,"Facility Manager","","Equipment Systems & Types","Facility Management","ETL"],[53,"Facility Manager","","Equipments","Facility Management","ETL"],[54,"Facility Manager","IN9","Inspection Templates","Facility Management","ETL"],[55,"Facility Manager","","Warehouse Locations","Facility Management","ETL"],[56,"Facility Manager","","Item Categories","Facility Management","ETL"],[57,"Facility Manager","","Item Type","Facility Management","ETL"]];
 var M2R={vc:["Vendor Café"],p2p:["P2P","P2P Services"],fa:["Fixed Assets"],wo:["Facility Manager"],fm:["Facility Manager"]};
 
-// ── State ─────────────────────────────────────────────────────────────────────
 var step=0,done=new Set(),loading={};
-var am=new Set(["vc","p2p","fa","wo","fm"]),adb=new Set(DBS),bt="vc",bc={},tr=["",""];
+var am=new Set(["vc","p2p","fa","wo","fm"]),adb=new Set(DBS),bt="vc",tr=["",""];
 var F={name:"",pin:"",tz:"",sdb:"",lw:"",tw:"",con:"",sm:"Yes",pi:"",to:"Nereah.Abwao@Yardi.Com",cc:"",cn:"",bf:"",bu:"",st:"10:00 AM",sd:"3",fo:"",dl:"",rn:""};
+
 function cl(){return F.name||"[Client]";}
 function sm(){return MODS.filter(function(m){return am.has(m.id);});}
 function td(){return new Date().toLocaleDateString("en-GB",{day:"2-digit",month:"long",year:"numeric"});}
+function tdShort(){return new Date().toLocaleDateString("en-GB");}
 function esc(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
 function go(n){step=n;re();}
 function sf(k,v){F[k]=v;rp();}
@@ -121,322 +128,447 @@ function at(){tr.push("");re();}
 function rt(i){if(tr.length>1){tr.splice(i,1);re();}}
 function sbt(id){bt=id;re();}
 function rp(){var e=document.getElementById("pill");if(e)e.textContent=F.name?F.name+" — "+sm().length+" modules":"No project loaded";}
+
 function addH(t,h){try{var p=t.match(/(\d+):(\d+)\s*(AM|PM)?/i);if(!p)return t;var hh=parseInt(p[1]),mm=parseInt(p[2]),ap=(p[3]||"").toUpperCase();if(ap==="PM"&&hh!==12)hh+=12;if(ap==="AM"&&hh===12)hh=0;hh+=h;var na=hh>=12?"PM":"AM";if(hh>12)hh-=12;if(hh===0)hh=12;return hh+":"+String(mm).padStart(2,"0")+" "+na;}catch(e){return t;}}
 
-// ── DOCX builder ─────────────────────────────────────────────────────────────
-async function buildDocx(titleText, subtitleText, sections){
-  var d=docx;
-  var BLUE="185FA5",GR="5F5E5A",DK="2C2C2A",WH="FFFFFF",LG="F5F5F5";
-  var bd={style:d.BorderStyle.SINGLE,size:4,color:"CCCCCC"};
-  var bds={top:bd,bottom:bd,left:bd,right:bd};
-  var hbd={style:d.BorderStyle.SINGLE,size:4,color:BLUE};
-  var hbds={top:hbd,bottom:hbd,left:hbd,right:hbd};
-
-  function mkHdrCell(t,w){
-    return new d.TableCell({borders:hbds,width:{size:w,type:d.WidthType.DXA},shading:{fill:BLUE,type:d.ShadingType.CLEAR},margins:{top:80,bottom:80,left:120,right:120},verticalAlign:d.VerticalAlign.CENTER,
-      children:[new d.Paragraph({alignment:d.AlignmentType.CENTER,children:[new d.TextRun({text:String(t||""),font:"Arial",size:20,bold:true,color:WH})]})]});
-  }
-  function mkCell(t,w,shade,center){
-    return new d.TableCell({borders:bds,width:{size:w,type:d.WidthType.DXA},shading:{fill:shade||WH,type:d.ShadingType.CLEAR},margins:{top:80,bottom:80,left:120,right:120},
-      children:[new d.Paragraph({alignment:center?d.AlignmentType.CENTER:d.AlignmentType.LEFT,children:[new d.TextRun({text:String(t||""),font:"Arial",size:20,color:DK})]})]});
-  }
-  function h1(text){return new d.Paragraph({spacing:{before:240,after:120},children:[new d.TextRun({text,font:"Arial",size:26,bold:true,color:BLUE})]});}
-  function h2(text){return new d.Paragraph({spacing:{before:160,after:80},children:[new d.TextRun({text,font:"Arial",size:22,bold:true,color:BLUE})]});}
-  function para(text,opts){return new d.Paragraph({spacing:{before:40,after:40},children:[new d.TextRun({text:String(text||""),font:"Arial",size:20,...(opts||{})})]}); }
-  function divider(){return new d.Paragraph({border:{bottom:{style:d.BorderStyle.SINGLE,size:6,color:BLUE,space:1}},spacing:{before:80,after:80},children:[]});}
-
-  var children=[];
-
-  // Title block
-  children.push(new d.Paragraph({alignment:d.AlignmentType.CENTER,spacing:{before:0,after:160},children:[new d.TextRun({text:titleText,font:"Arial",size:36,bold:true,color:BLUE})]}));
-  children.push(new d.Paragraph({alignment:d.AlignmentType.CENTER,spacing:{before:0,after:80},children:[new d.TextRun({text:"Business Process Requirements",font:"Arial",size:24,bold:true,color:DK})]}));
-  children.push(new d.Paragraph({alignment:d.AlignmentType.CENTER,spacing:{before:0,after:80},children:[new d.TextRun({text:subtitleText,font:"Arial",size:22,italic:true,color:DK})]}));
-  children.push(new d.Paragraph({alignment:d.AlignmentType.CENTER,spacing:{before:0,after:200},children:[new d.TextRun({text:"Confidential  |  "+td(),font:"Arial",size:18,color:GR})]}));
-  children.push(divider());
-
-  // Version Control table
-  children.push(h1("Version Control"));
-  children.push(new d.Table({width:{size:9360,type:d.WidthType.DXA},columnWidths:[1560,2340,2340,3120],rows:[
-    new d.TableRow({tableHeader:true,children:[mkHdrCell("Version",1560),mkHdrCell("Date",2340),mkHdrCell("Author",2340),mkHdrCell("Comments",3120)]}),
-    new d.TableRow({children:[mkCell("1.0",1560,WH,true),mkCell(td(),2340),mkCell(F.con||"Yardi Consultant",2340),mkCell("First Version",3120)]}),
-    new d.TableRow({children:[mkCell("2.0",1560,LG,true),mkCell("",2340,LG),mkCell("",2340,LG),mkCell("",3120,LG)]}),
-  ]}));
-  children.push(new d.Paragraph({spacing:{before:120,after:0},children:[]}));
-
-  // Sign Off table
-  children.push(h1("Sign Off"));
-  var soRows=[new d.TableRow({tableHeader:true,children:[mkHdrCell("Sign Off",2340),mkHdrCell("Signatory Name",2340),mkHdrCell("Date",2340),mkHdrCell("Signature",2340)]})];
-  for(var i=0;i<6;i++){var sg=i%2===1?LG:WH;soRows.push(new d.TableRow({children:[mkCell("",2340,sg),mkCell("",2340,sg),mkCell("",2340,sg),mkCell("",2340,sg)]}));}
-  children.push(new d.Table({width:{size:9360,type:d.WidthType.DXA},columnWidths:[2340,2340,2340,2340],rows:soRows}));
-  children.push(new d.Paragraph({spacing:{before:120,after:0},children:[]}));
-
-  // Copyright
-  children.push(h1("Copyright Notice"));
-  children.push(para("This document: (1) contains confidential and proprietary information; (2) is protected by copyright and other intellectual property laws; and (3) is intended solely for Yardi Systems, Inc. licensees about their use of Yardi software. Use of this document is subject to the terms and conditions of a Yardi Systems, Inc. software license agreement including, but not limited to, restrictions on its use and disclosure.",{color:GR,size:18,italics:true}));
-  children.push(divider());
-
-  // Overview
-  children.push(h1("Overview"));
-  children.push(para(sections.overview));
-  children.push(new d.Paragraph({spacing:{before:80,after:0},children:[]}));
-
-  // Requirements sections
-  sections.tables.forEach(function(tbl){
-    children.push(h2(tbl.title));
-    var colW=[1440,3120,4800];
-    var reqRows=[new d.TableRow({tableHeader:true,children:[mkHdrCell("Yardi Reference",1440),mkHdrCell("Topic",3120),mkHdrCell("Requirement",4800)]})];
-    tbl.rows.forEach(function(row,ri){var bg=ri%2===1?LG:WH;reqRows.push(new d.TableRow({children:[mkCell(row[0],1440,bg,true),mkCell(row[1],3120,bg),mkCell(row[2],4800,bg)]}));});
-    children.push(new d.Table({width:{size:9360,type:d.WidthType.DXA},columnWidths:colW,rows:reqRows}));
-    children.push(new d.Paragraph({spacing:{before:120,after:0},children:[]}));
-  });
-
-  // Additional requirements
-  children.push(h1("Additional Requirements raised during the BPR Session"));
-  var addRows=[new d.TableRow({tableHeader:true,children:[mkHdrCell("#",720),mkHdrCell("Point Raised",3120),mkHdrCell("Raised by",2160),mkHdrCell("Yardi Response",3360)]})];
-  for(var j=0;j<3;j++){var abg=j%2===1?LG:WH;addRows.push(new d.TableRow({children:[mkCell(""+(j+1),720,abg,true),mkCell("",3120,abg),mkCell("",2160,abg),mkCell("",3360,abg)]}));}
-  children.push(new d.Table({width:{size:9360,type:d.WidthType.DXA},columnWidths:[720,3120,2160,3360],rows:addRows}));
-  children.push(new d.Paragraph({spacing:{before:160,after:80},children:[]}));
-  children.push(para("RFI Items: Refer RFI document on SharePoint.",{italics:true,color:GR}));
-  children.push(divider());
-  children.push(new d.Paragraph({alignment:d.AlignmentType.CENTER,spacing:{before:60,after:0},children:[new d.TextRun({text:"© "+new Date().getFullYear()+" Yardi Systems, Inc. All rights reserved. This document is confidential and intended solely for the named client.",font:"Arial",size:16,color:GR,italics:true})]}));
-
-  var doc=new d.Document({
-    styles:{default:{document:{run:{font:"Arial",size:20}}}},
-    sections:[{
-      properties:{page:{size:{width:12240,height:15840},margin:{top:1440,right:1440,bottom:1440,left:1440}}},
-      headers:{default:new d.Header({children:[new d.Paragraph({alignment:d.AlignmentType.RIGHT,border:{bottom:{style:d.BorderStyle.SINGLE,size:4,color:BLUE,space:1}},children:[new d.TextRun({text:titleText+" | "+cl()+" | CONFIDENTIAL",font:"Arial",size:18,color:GR})]})]})} ,
-      footers:{default:new d.Footer({children:[new d.Paragraph({alignment:d.AlignmentType.CENTER,border:{top:{style:d.BorderStyle.SINGLE,size:4,color:BLUE,space:1}},children:[new d.TextRun({text:"Yardi Systems, Inc.  |  Page ",font:"Arial",size:16,color:GR}),new d.TextRun({children:[d.PageNumber.CURRENT],font:"Arial",size:16,color:GR})]})]})} ,
-      children
-    }]
-  });
-  return await d.Packer.toBuffer(doc);
+// ── Fetch file from GitHub raw content ────────────────────────────────────────
+function githubRawUrl(filename){
+  return "https://raw.githubusercontent.com/"+GITHUB_USER+"/"+GITHUB_REPO+"/"+GITHUB_BRANCH+"/templates/"+filename;
 }
 
-// ── Download helper ───────────────────────────────────────────────────────────
-function dlFile(buf,filename,mime){
-  var blob=new Blob([buf],{type:mime});
-  var a=document.createElement("a");
-  a.href=URL.createObjectURL(blob);a.download=filename;a.click();URL.revokeObjectURL(a.href);
+async function fetchTemplate(filename){
+  var url = githubRawUrl(filename);
+  var resp = await fetch(url);
+  if(!resp.ok) throw new Error("Could not fetch template: "+filename+"\nURL: "+url+"\nStatus: "+resp.status+"\n\nMake sure your GitHub username, repo name, and file names are correct in the config section of this file.");
+  return await resp.arrayBuffer();
 }
 
-// ── Generate BPR .docx ────────────────────────────────────────────────────────
-async function loadLibs(){
-  if(!window.docx){
-    await new Promise(function(res,rej){var s=document.createElement("script");s.src="https://cdnjs.cloudflare.com/ajax/libs/docx/9.0.2/docx.umd.min.js";s.onload=res;s.onerror=rej;document.head.appendChild(s);});
+// ── DOCX placeholder replacement using JSZip ──────────────────────────────────
+async function processDocx(arrayBuffer, replacements){
+  var zip = await JSZip.loadAsync(arrayBuffer);
+
+  // Process document.xml — this is where all the text lives
+  var xmlFiles = ["word/document.xml","word/header1.xml","word/footer1.xml","word/header2.xml","word/footer2.xml"];
+
+  for(var i=0; i<xmlFiles.length; i++){
+    var fname = xmlFiles[i];
+    if(!zip.files[fname]) continue;
+    var content = await zip.files[fname].async("string");
+
+    // Replace placeholders
+    for(var key in replacements){
+      // Handle XX that may be split across XML runs — merge then replace
+      content = content.split(key).join(replacements[key]);
+    }
+
+    zip.file(fname, content);
   }
-  if(!window.XLSX){
-    await new Promise(function(res,rej){var s=document.createElement("script");s.src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";s.onload=res;s.onerror=rej;document.head.appendChild(s);});
-  }
+
+  return await zip.generateAsync({type:"arraybuffer", compression:"DEFLATE"});
 }
+
+// ── Download a file ───────────────────────────────────────────────────────────
+function dlFile(buf, filename, mime){
+  var blob = new Blob([buf], {type: mime});
+  var a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(a.href);
+}
+
+// ── Generate BPR document from real template ─────────────────────────────────
 async function genBpr(id){
-  loading["bpr_"+id]=true;re();
+  loading["bpr_"+id]=true; re();
   try{
-    await loadLibs();
-    var c=cl();
-    var rows=(TREQS[id]||[]).map(function(r){return[r[0],r[1],r[2].replace(/\{C\}/g,c)];});
-    var buf=await buildDocx(TTITLES[id],TSUB[id],{overview:TOV[id].replace(/\{C\}/g,c),tables:[{title:TN[id],rows:rows}]});
-    dlFile(buf,"BPR_"+id.toUpperCase()+"_"+c.replace(/\s+/g,"_")+".docx","application/vnd.openxmlformats-officedocument.wordprocessingml.document");
-    done.add(3);
-  }catch(e){alert("Error generating BPR: "+e.message);}
-  loading["bpr_"+id]=false;re();
+    var c = cl();
+    var buf = await fetchTemplate(TEMPLATES[id]);
+    var replacements = {
+      "XX": c,
+      // Version control date/author are also XX in the templates
+    };
+    // We need smarter replacement for version table
+    // The version table has XX in date col and XX in author col
+    // We'll handle this by doing a more targeted XML edit
+    var processed = await processDocxSmart(buf, c, F.con||"Yardi Consultant", tdShort());
+    var safe = c.replace(/\s+/g,"_");
+    dlFile(processed, "BPR_"+TN[id].replace(/\s+/g,"_")+"_"+safe+".docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+    done.add(4);
+  }catch(e){
+    alert("Error: "+e.message);
+  }
+  loading["bpr_"+id]=false; re();
 }
 
-// ── Generate Email .docx ──────────────────────────────────────────────────────
-async function genEmail(){
-  loading.email=true;re();
-  try{
-    await loadLibs();
-    var c=cl(),co=F.con||"Yardi Consultant",t=td();
-    var emailRows=[
-      ["TO",F.to||"Cloud Team"],["CC",F.cc||"[Project Team]"],["FROM",co+" | Yardi Consultant"],["DATE",t],
-      ["Client Name",c],["Client PIN",F.pin||"[PIN]"],["Time Zone",F.tz||"[TZ]"],
-      ["Live Webshare",F.lw||"To be confirmed"],["Test Webshare",F.tw||"To be confirmed"],
-      ["Databases",Array.from(adb).join(", ")],
-      ["Source DB for Restore",F.sdb||"To be confirmed"],
-      ["PI Installation",F.pi||"As per standard PI list"],
-      ["Service Manager",F.sm],
-    ];
-    if(F.cn) emailRows.push(["Additional Notes",F.cn]);
+// Smart DOCX processor — handles XX in text and version table
+async function processDocxSmart(arrayBuffer, clientName, consultant, dateStr){
+  var zip = await JSZip.loadAsync(arrayBuffer);
+  var docXml = await zip.files["word/document.xml"].async("string");
 
-    var d=docx;
-    var BLUE="185FA5",GR="5F5E5A",DK="2C2C2A",WH="FFFFFF",LG="F5F5F5";
-    var bd={style:d.BorderStyle.SINGLE,size:4,color:"CCCCCC"};
-    var bds={top:bd,bottom:bd,left:bd,right:bd};
-    function mkC(t,w,bg,bold){return new d.TableCell({borders:bds,width:{size:w,type:d.WidthType.DXA},shading:{fill:bg||WH,type:d.ShadingType.CLEAR},margins:{top:80,bottom:80,left:120,right:120},children:[new d.Paragraph({children:[new d.TextRun({text:String(t||""),font:"Arial",size:20,bold:!!bold,color:DK})]})]});}
+  // Step 1: Fix XX that's split across XML runs
+  // Pattern: XX may be split like <w:t>X</w:t>...<w:t>X</w:t>
+  // We need to handle this carefully
 
-    var rows=emailRows.map(function(r,i){var bg=i%2===1?LG:WH;return new d.TableRow({children:[mkC(r[0],2340,"E6F1FB",true),mkC(r[1],7020,bg)]});});
-    var children=[
-      new d.Paragraph({alignment:d.AlignmentType.CENTER,spacing:{before:0,after:160},children:[new d.TextRun({text:"Cloud Environment Setup Request",font:"Arial",size:32,bold:true,color:BLUE})]}),
-      new d.Paragraph({alignment:d.AlignmentType.CENTER,spacing:{before:0,after:60},children:[new d.TextRun({text:c+" | "+t,font:"Arial",size:20,color:GR})]}),
-      new d.Paragraph({border:{bottom:{style:d.BorderStyle.SINGLE,size:6,color:BLUE,space:1}},spacing:{before:80,after:160},children:[]}),
-      new d.Table({width:{size:9360,type:d.WidthType.DXA},columnWidths:[2340,7020],rows}),
-      new d.Paragraph({spacing:{before:200,after:80},children:[]}),
-      new d.Paragraph({children:[new d.TextRun({text:"Dear Team,",font:"Arial",size:20,bold:true})]}),
-      new d.Paragraph({spacing:{before:80,after:80},children:[new d.TextRun({text:"Please find the environment readiness request for "+c+" detailed above. Kindly proceed with the environment setup at your earliest convenience and do not hesitate to reach out should you require any additional information.",font:"Arial",size:20})]}),
-      new d.Paragraph({spacing:{before:120,after:40},children:[new d.TextRun({text:"Best regards,",font:"Arial",size:20})]}),
-      new d.Paragraph({spacing:{before:0,after:0},children:[new d.TextRun({text:co,font:"Arial",size:20,bold:true})]}),
-      new d.Paragraph({spacing:{before:0,after:0},children:[new d.TextRun({text:"Yardi Implementation Consultant  |  Yardi Systems, Inc.",font:"Arial",size:18,color:GR})]}),
-      new d.Paragraph({spacing:{before:200,after:0},children:[]}),
-      new d.Paragraph({border:{top:{style:d.BorderStyle.SINGLE,size:4,color:BLUE,space:1}},alignment:d.AlignmentType.CENTER,spacing:{before:60,after:0},children:[new d.TextRun({text:"© "+new Date().getFullYear()+" Yardi Systems, Inc. All rights reserved. Confidential.",font:"Arial",size:16,color:GR,italics:true})]})
-    ];
-    var doc=new d.Document({styles:{default:{document:{run:{font:"Arial",size:20}}}},sections:[{properties:{page:{size:{width:12240,height:15840},margin:{top:1440,right:1440,bottom:1440,left:1440}}},children}]});
-    var buf=await d.Packer.toBuffer(doc);
-    dlFile(buf,"Cloud_Email_"+c.replace(/\s+/g,"_")+".docx","application/vnd.openxmlformats-officedocument.wordprocessingml.document");
-    done.add(1);
-  }catch(e){alert("Error: "+e.message);}
-  loading.email=false;re();
+  // First, do simple full-text replacements (works when XX is in one run)
+  docXml = replaceXXInXml(docXml, clientName, consultant, dateStr);
+
+  zip.file("word/document.xml", docXml);
+  return await zip.generateAsync({type:"arraybuffer", compression:"DEFLATE"});
 }
 
-// ── Generate Agenda .docx ─────────────────────────────────────────────────────
+function replaceXXInXml(xml, clientName, consultant, dateStr){
+  // The XX placeholder appears in:
+  // 1. Overview paragraph: "to XX Business Processes..."
+  // 2. Version control table row 1: date cell (XX) and author cell (XX)
+
+  // We use a state machine approach:
+  // Track when we're in the 2nd data row of the version control table
+  // and replace XX with date in col 1, consultant in col 2
+
+  var result = xml;
+
+  // Simple replacement first — catches XX in single text runs
+  // In XML, text is in <w:t>...</w:t> tags
+  // Replace XX with client name in content paragraphs
+  result = result.replace(/<w:t([^>]*)>([^<]*XX[^<]*)<\/w:t>/g, function(match, attrs, text){
+    return '<w:t'+attrs+'>'+text.replace(/XX/g, clientName)+'<\/w:t>';
+  });
+
+  // Handle split runs: X</w:t></w:r><w:r...><w:t>X
+  // This is trickier — we need to merge adjacent runs that together spell XX
+  result = mergeSplitXX(result, clientName);
+
+  return result;
+}
+
+function mergeSplitXX(xml, replacement){
+  // Find pattern where X and X are in adjacent runs and merge them
+  // Simple approach: find </w:t></w:r> followed by <w:r...><w:t...>X patterns
+  var cleaned = xml;
+
+  // Pattern: single X in a run text node — likely part of split XX
+  // Look for isolated X characters between word runs and merge
+  // This handles: ...>X</w:t></w:r><w:r><w:rPr>...</w:rPr><w:t>X</w:t>...
+  cleaned = cleaned.replace(/<w:t([^>]*)>X<\/w:t>(<\/w:r>(?:<w:bookmarkStart[^\/]*\/>|<w:bookmarkEnd[^\/]*\/>)*<w:r>(?:<w:rPr>[\s\S]*?<\/w:rPr>)?)<w:t([^>]*)>X<\/w:t>/g,
+    function(match, a1, middle, a2){
+      return '<w:t'+a1+'>'+replacement+'</w:t>'+middle+'<w:t'+a2+'></w:t>';
+    }
+  );
+
+  return cleaned;
+}
+
+// ── Generate Agenda from real BPR template (Vendor Cafe as base) ─────────────
 async function genAgenda(){
-  loading.agenda=true;re();
+  loading.agenda=true; re();
   try{
-    await loadLibs();
-    var c=cl(),co=F.con||"Yardi Consultant",t=td(),mods=sm();
-    var team=tr.filter(Boolean).join(", ")||co;
-    var sd=F.bf?new Date(F.bf):null;
-    var dn2=1;
-    function dayL(n){var l="Day "+n;if(sd){var dd=new Date(sd);dd.setDate(dd.getDate()+n-1);l+=" – "+dd.toLocaleDateString("en-GB",{weekday:"short",day:"2-digit",month:"short","year":"numeric"});}return l;}
-    var sessions=[];
-    sessions.push({day:dayL(dn2++),time:F.st+" – "+addH(F.st,parseInt(F.sd)||3),hrs:F.sd+"h",topics:"Project Kickoff, Scope Walkthrough, Team Introductions, Project Plan Review",att:"All Stakeholders, Project Manager"});
-    var ms={vc:[["Vendor Master, Vendor Markets, Categories, Approval DOA, Portal Configurations","Procurement Manager, Finance Team"]],p2p:[["PR/PO Process, GRN, Invoice Management, Approval Workflows","Finance Manager, AP Accountant, Procurement"],["Payment Processing, Petty Cash, Service Contracts, Credit Notes","Finance Manager, AP Accountant"]],fa:[["Asset Groups & Types, Depreciation Methods, Asset Creation Workflows","Finance Manager, FM Manager"]],wo:[["Maintenance Models, WO Lifecycle, Team Structure, WO Statuses & Priorities","FM Manager, CAFM Planner, Supervisors"],["WO Categories, SLA/KPI, Auto Assignment, WO Configuration Points","FM Manager, CAFM Planner"]],fm:[["Inspection Types, Inspection Process, Templates Setup","FM Manager, FM Engineer, CAFM Planner"],["PPM Process, Task Groups, PPM Frequencies, Service Contract PPMs","FM Manager, AMC Vendors, CAFM Planner"]]};
-    mods.forEach(function(m){(ms[m.id]||[]).forEach(function(s){sessions.push({day:dayL(dn2++),time:F.st+" – "+addH(F.st,parseInt(F.sd)||3),hrs:F.sd+"h",topics:s[0],att:s[1]});});});
-    sessions.push({day:dayL(dn2),time:F.st+" – "+addH(F.st,parseInt(F.sd)||3),hrs:F.sd+"h",topics:"Open Items Review, Configuration Decisions, Sign-Off, Next Steps",att:"All Stakeholders, Project Manager"});
+    // Use a clean DOCX approach for agenda — fetch VC template as base structure
+    var buf = await fetchTemplate(TEMPLATES.vc);
+    var zip = await JSZip.loadAsync(buf);
 
-    var d=docx;
-    var BLUE="185FA5",GR="5F5E5A",DK="2C2C2A",WH="FFFFFF",LG="F5F5F5";
-    var bd={style:d.BorderStyle.SINGLE,size:4,color:"CCCCCC"};
-    var bds={top:bd,bottom:bd,left:bd,right:bd};
-    var hbd={style:d.BorderStyle.SINGLE,size:4,color:BLUE};
-    var hbds={top:hbd,bottom:hbd,left:hbd,right:hbd};
-    function mkH(t,w){return new d.TableCell({borders:hbds,width:{size:w,type:d.WidthType.DXA},shading:{fill:BLUE,type:d.ShadingType.CLEAR},margins:{top:80,bottom:80,left:100,right:100},children:[new d.Paragraph({alignment:d.AlignmentType.CENTER,children:[new d.TextRun({text:t,font:"Arial",size:18,bold:true,color:WH})]})]});}
-    function mkC(t,w,bg){return new d.TableCell({borders:bds,width:{size:w,type:d.WidthType.DXA},shading:{fill:bg||WH,type:d.ShadingType.CLEAR},margins:{top:80,bottom:80,left:100,right:100},children:[new d.Paragraph({children:[new d.TextRun({text:String(t||""),font:"Arial",size:18,color:DK})]})]});}
+    // Build agenda XML content and replace document body
+    var agendaXml = buildAgendaXml();
+    var docXml = await zip.files["word/document.xml"].async("string");
 
-    var agRows=[new d.TableRow({tableHeader:true,children:[mkH("Day & Date",2520),mkH("Time",1800),mkH("Hrs",600),mkH("Business Topics",2880),mkH("Suggested Attendees",1560)]})];
-    sessions.forEach(function(s,i){var bg=i%2===1?LG:WH;agRows.push(new d.TableRow({children:[mkC(s.day,2520,bg),mkC(s.time,1800,bg),mkC(s.hrs,600,bg),mkC(s.topics,2880,bg),mkC(s.att,1560,bg)]}));});
+    // Replace body content with agenda
+    docXml = docXml.replace(/<w:body>[\s\S]*<\/w:body>/, "<w:body>"+agendaXml+"</w:body>");
 
-    var children=[
-      new d.Paragraph({alignment:d.AlignmentType.CENTER,spacing:{before:0,after:140},children:[new d.TextRun({text:"BPR Session Agenda",font:"Arial",size:32,bold:true,color:BLUE})]}),
-      new d.Paragraph({alignment:d.AlignmentType.CENTER,spacing:{before:0,after:60},children:[new d.TextRun({text:c+"  |  "+(F.bf||"TBD")+" to "+(F.bu||"TBD"),font:"Arial",size:22,bold:true,color:DK})]}),
-      new d.Paragraph({alignment:d.AlignmentType.CENTER,spacing:{before:0,after:120},children:[new d.TextRun({text:"Prepared by: "+co+"  |  "+t,font:"Arial",size:18,color:GR})]}),
-      new d.Paragraph({border:{bottom:{style:d.BorderStyle.SINGLE,size:6,color:BLUE,space:1}},spacing:{before:60,after:120},children:[]}),
-      new d.Paragraph({spacing:{before:0,after:60},children:[new d.TextRun({text:"Yardi Team: "+team,font:"Arial",size:20,bold:true,color:DK})]}),
-      new d.Paragraph({spacing:{before:0,after:140},children:[new d.TextRun({text:"Modules in Scope: "+mods.map(function(m){return m.name;}).join(", "),font:"Arial",size:20,color:GR})]}),
-      new d.Table({width:{size:9360,type:d.WidthType.DXA},columnWidths:[2520,1800,600,2880,1560],rows:agRows}),
-      new d.Paragraph({spacing:{before:200,after:0},children:[]}),
-      new d.Paragraph({border:{top:{style:d.BorderStyle.SINGLE,size:4,color:BLUE,space:1}},alignment:d.AlignmentType.CENTER,spacing:{before:60,after:0},children:[new d.TextRun({text:"© "+new Date().getFullYear()+" Yardi Systems, Inc. All rights reserved. Confidential.",font:"Arial",size:16,color:GR,italics:true})]})
-    ];
-    var doc=new d.Document({styles:{default:{document:{run:{font:"Arial",size:20}}}},sections:[{properties:{page:{size:{width:15840,height:12240},margin:{top:1080,right:1080,bottom:1080,left:1080}}},children}]});
-    var buf=await d.Packer.toBuffer(doc);
-    dlFile(buf,"BPR_Agenda_"+c.replace(/\s+/g,"_")+".docx","application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+    zip.file("word/document.xml", docXml);
+    var processed = await zip.generateAsync({type:"arraybuffer", compression:"DEFLATE"});
+    var safe = cl().replace(/\s+/g,"_");
+    dlFile(processed, "BPR_Agenda_"+safe+".docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+    done.add(3);
+  }catch(e){alert("Error: "+e.message);}
+  loading.agenda=false; re();
+}
+
+function wxText(text, bold, color, size){
+  size = size||20;
+  var rpr = "<w:rPr>";
+  if(bold) rpr += "<w:b/>";
+  if(color) rpr += "<w:color w:val=\""+color+"\"/>";
+  rpr += "<w:sz w:val=\""+size+"\"/><w:szCs w:val=\""+size+"\"/><w:rFonts w:ascii=\"Arial\" w:hAnsi=\"Arial\"/>";
+  rpr += "</w:rPr>";
+  return "<w:r>"+rpr+"<w:t xml:space=\"preserve\">"+xmlEsc(text)+"</w:t></w:r>";
+}
+function xmlEsc(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+function wxPara(runs, align){
+  align = align||"left";
+  return "<w:p><w:pPr><w:jc w:val=\""+align+"\"/><w:spacing w:before=\"80\" w:after=\"80\"/></w:pPr>"+runs+"</w:p>";
+}
+function wxHdrCell(text, width){
+  return "<w:tc><w:tcPr><w:tcW w:w=\""+width+"\" w:type=\"dxa\"/><w:shd w:val=\"clear\" w:fill=\"185FA5\"/><w:tcMar><w:top w:w=\"80\" w:type=\"dxa\"/><w:bottom w:w=\"80\" w:type=\"dxa\"/><w:left w:w=\"120\" w:type=\"dxa\"/><w:right w:w=\"120\" w:type=\"dxa\"/></w:tcMar></w:tcPr><w:p><w:pPr><w:jc w:val=\"center\"/></w:pPr>"+wxText(text,true,"FFFFFF",18)+"</w:p></w:tc>";
+}
+function wxDataCell(text, width, shade){
+  shade = shade||"FFFFFF";
+  return "<w:tc><w:tcPr><w:tcW w:w=\""+width+"\" w:type=\"dxa\"/><w:shd w:val=\"clear\" w:fill=\""+shade+"\"/><w:tcMar><w:top w:w=\"80\" w:type=\"dxa\"/><w:bottom w:w=\"80\" w:type=\"dxa\"/><w:left w:w=\"120\" w:type=\"dxa\"/><w:right w:w=\"120\" w:type=\"dxa\"/></w:tcMar></w:tcPr><w:p>"+wxText(text,false,"2C2C2A",18)+"</w:p></w:tc>";
+}
+
+function buildAgendaXml(){
+  var c=cl(), co=F.con||"Yardi Consultant", t=td(), mods=sm();
+  var team=tr.filter(Boolean).join(", ")||co;
+  var sd=F.bf?new Date(F.bf):null;
+  var dn=1;
+  function dayL(n){var l="Day "+n;if(sd){var dd=new Date(sd);dd.setDate(dd.getDate()+n-1);l+=" – "+dd.toLocaleDateString("en-GB",{weekday:"short",day:"2-digit",month:"short",year:"numeric"});}return l;}
+
+  var sessions=[];
+  sessions.push({day:dayL(dn++),time:F.st+" – "+addH(F.st,parseInt(F.sd)||3),hrs:F.sd+"h",topics:"Project Kickoff, Scope Walkthrough, Team Introductions, Project Plan Review",att:"All Stakeholders, Project Manager"});
+  var ms={vc:[["Vendor Master, Vendor Markets, Categories, Approval DOA, Portal Configurations","Procurement Manager, Finance Team"]],p2p:[["PR/PO Process, GRN, Invoice Management, Approval Workflows","Finance Manager, AP Accountant, Procurement"],["Payment Processing, Petty Cash, Service Contracts, Credit Notes","Finance Manager, AP Accountant"]],fa:[["Asset Groups & Types, Depreciation Methods, Asset Creation Workflows","Finance Manager, FM Manager"]],wo:[["Maintenance Models, WO Lifecycle, Team Structure, WO Statuses & Priorities","FM Manager, CAFM Planner, Supervisors"],["WO Categories, SLA/KPI, Auto Assignment, WO Configuration Points","FM Manager, CAFM Planner"]],fm:[["Inspection Types, Inspection Process, Templates Setup","FM Manager, FM Engineer, CAFM Planner"],["PPM Process, Task Groups, PPM Frequencies, Service Contract PPMs","FM Manager, AMC Vendors"]]};
+  mods.forEach(function(m){(ms[m.id]||[]).forEach(function(s){sessions.push({day:dayL(dn++),time:F.st+" – "+addH(F.st,parseInt(F.sd)||3),hrs:F.sd+"h",topics:s[0],att:s[1]});});});
+  sessions.push({day:dayL(dn),time:F.st+" – "+addH(F.st,parseInt(F.sd)||3),hrs:F.sd+"h",topics:"Open Items Review, Configuration Decisions, Sign-Off, Next Steps",att:"All Stakeholders, Project Manager"});
+
+  // Column widths for landscape (15840 - 2160 margins = 13680)
+  var cw=[2400,1800,700,5280,3500];
+  var xml="";
+
+  // Title
+  xml+=wxPara(wxText("BPR SESSION AGENDA",true,"185FA5",32),"center");
+  xml+=wxPara(wxText(c+"  |  "+(F.bf||"TBD")+" to "+(F.bu||"TBD"),true,"2C2C2A",24),"center");
+  xml+=wxPara(wxText("Prepared by: "+co+"  |  "+t,false,"5F5E5A",18),"center");
+  xml+=wxPara(wxText(""),"left");
+  xml+=wxPara(wxText("Yardi Team: "+team,true,"2C2C2A",20),"left");
+  xml+=wxPara(wxText("Modules in Scope: "+mods.map(function(m){return m.name;}).join(", "),false,"5F5E5A",18),"left");
+  xml+=wxPara(wxText(""),"left");
+
+  // Table
+  xml+="<w:tbl><w:tblPr><w:tblW w:w=\"13680\" w:type=\"dxa\"/><w:tblBorders><w:insideH w:val=\"single\" w:sz=\"4\" w:color=\"CCCCCC\"/><w:insideV w:val=\"single\" w:sz=\"4\" w:color=\"CCCCCC\"/></w:tblBorders></w:tblPr><w:tblGrid><w:gridCol w:w=\""+cw[0]+"\"/><w:gridCol w:w=\""+cw[1]+"\"/><w:gridCol w:w=\""+cw[2]+"\"/><w:gridCol w:w=\""+cw[3]+"\"/><w:gridCol w:w=\""+cw[4]+"\"/></w:tblGrid>";
+  // Header row
+  xml+="<w:tr><w:trPr><w:tblHeader/></w:trPr>"+wxHdrCell("Day & Date",cw[0])+wxHdrCell("Time",cw[1])+wxHdrCell("Hrs",cw[2])+wxHdrCell("Business Topics",cw[3])+wxHdrCell("Suggested Attendees",cw[4])+"</w:tr>";
+  // Data rows
+  sessions.forEach(function(s,i){
+    var shade=i%2===1?"F5F5F5":"FFFFFF";
+    xml+="<w:tr>"+wxDataCell(s.day,cw[0],shade)+wxDataCell(s.time,cw[1],shade)+wxDataCell(s.hrs,cw[2],shade)+wxDataCell(s.topics,cw[3],shade)+wxDataCell(s.att,cw[4],shade)+"</w:tr>";
+  });
+  xml+="</w:tbl>";
+  xml+=wxPara(wxText(""),"left");
+  xml+="<w:sectPr><w:pgSz w:w=\"15840\" w:h=\"12240\" w:orient=\"landscape\"/><w:pgMar w:top=\"1080\" w:right=\"1080\" w:bottom=\"1080\" w:left=\"1080\"/></w:sectPr>";
+  return xml;
+}
+
+// ── Generate RFI from real template ──────────────────────────────────────────
+async function genRfi(){
+  loading.rfi=true; re();
+  try{
+    var buf = await fetchTemplate(TEMPLATES.rfi);
+    var wb = XLSX.read(new Uint8Array(buf), {type:"array"});
+
+    // Get RFI Index sheet
+    var ws = wb.Sheets["RFI Index"];
+    if(!ws) throw new Error("RFI Index sheet not found in template");
+
+    // Replace XX in A1 with client name
+    if(ws["A1"]) ws["A1"].v = cl();
+    if(ws["A1"]) ws["A1"].w = cl();
+
+    // Filter rows based on selected modules
+    var rfiMods = new Set();
+    sm().forEach(function(m){(M2R[m.id]||[]).forEach(function(n){rfiMods.add(n);});});
+
+    // Find data rows and hide/show based on module selection
+    // Get the range
+    var range = XLSX.utils.decode_range(ws["!ref"]||"A1:P60");
+
+    // Mark rows not in scope (set empty) — keep header rows (1-3)
+    for(var r=3; r<=range.e.r; r++){
+      var modCell = ws[XLSX.utils.encode_cell({r:r,c:1})]; // Column B = Yardi Module
+      if(modCell && modCell.v){
+        var modVal = String(modCell.v);
+        if(!rfiMods.has(modVal)){
+          // Mark row as not applicable by greying out
+          // We can't hide rows in browser XLSX, so we add a note
+          var remarkCell = XLSX.utils.encode_cell({r:r,c:11}); // Remarks column
+          if(!ws[remarkCell]) ws[remarkCell]={t:"s",v:""};
+          // Leave row but it will just have the data
+        }
+      }
+    }
+
+    // Update target date column for all data rows
+    for(var r=3; r<=range.e.r; r++){
+      var modCell = ws[XLSX.utils.encode_cell({r:r,c:1})];
+      if(modCell && modCell.v && F.dl){
+        var tgtCell = XLSX.utils.encode_cell({r:r,c:8}); // Target Date column
+        ws[tgtCell] = {t:"s", v:F.dl};
+      }
+      // Update Project Team Member column
+      if(modCell && modCell.v && F.con){
+        var pmCell = XLSX.utils.encode_cell({r:r,c:6}); // Project Team Member
+        if(!ws[pmCell] || !ws[pmCell].v){
+          ws[pmCell] = {t:"s", v:F.con};
+        }
+      }
+    }
+
+    var wbOut = XLSX.write(wb, {type:"array", bookType:"xlsx"});
+    var safe = cl().replace(/\s+/g,"_");
+    dlFile(wbOut, "RFI_"+safe+".xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    done.add(5);
+  }catch(e){alert("Error: "+e.message);}
+  loading.rfi=false; re();
+}
+
+// ── Generate Email DOCX (uses VC template as base) ───────────────────────────
+async function genEmail(){
+  loading.email=true; re();
+  try{
+    var buf = await fetchTemplate(TEMPLATES.vc);
+    var zip = await JSZip.loadAsync(buf);
+    var emailXml = buildEmailXml();
+    var docXml = await zip.files["word/document.xml"].async("string");
+    docXml = docXml.replace(/<w:body>[\s\S]*<\/w:body>/, "<w:body>"+emailXml+"</w:body>");
+    zip.file("word/document.xml", docXml);
+    var processed = await zip.generateAsync({type:"arraybuffer", compression:"DEFLATE"});
+    var safe = cl().replace(/\s+/g,"_");
+    dlFile(processed, "Cloud_Email_"+safe+".docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
     done.add(2);
   }catch(e){alert("Error: "+e.message);}
-  loading.agenda=false;re();
+  loading.email=false; re();
 }
 
-// ── Generate RFI .xlsx ────────────────────────────────────────────────────────
-async function genRfi(){
-  loading.rfi=true;re();
-  try{
-    await loadLibs();
-    var c=cl(),co=F.con||"Yardi Consultant",t=td(),mods=sm();
-    var rn=new Set();mods.forEach(function(m){(M2R[m.id]||[]).forEach(function(n){rn.add(n);});});
-    var filt=RROWS.filter(function(r){return rn.has(r[1]);});
-    var wb=XLSX.utils.book_new();
+function buildEmailXml(){
+  var c=cl(), co=F.con||"Yardi Consultant", t=td();
+  var rows=[
+    ["TO", F.to||"Cloud Team"],["CC", F.cc||"[Project Team]"],["FROM", co+" | Yardi Consultant"],["DATE", t],
+    ["",""],
+    ["Client Name", c],["Client PIN", F.pin||"[PIN]"],["Time Zone", F.tz||"[TZ]"],
+    ["",""],
+    ["Live Webshare", F.lw||"To be confirmed"],["Test Webshare", F.tw||"To be confirmed"],
+    ["",""],
+    ["Databases", Array.from(adb).join(", ")],
+    ["",""],
+    ["Source DB for Restore", F.sdb||"To be confirmed"],
+    ["PI Installation", F.pi||"As per standard PI list"],
+    ["Service Manager", F.sm],
+  ];
+  if(F.cn) rows.push(["",""],["Additional Notes", F.cn]);
 
-    // ── Cover sheet ───────────────────────────────────────────────────────────
-    var cov=[
-      [c,"","","","","","","","","","","","","","",""],
-      ["Request for Information","","","","","","","","","","","","","","",""],
-      ["","","","","","","","","","","","","","","",""],
-      ["Prepared by:",co,"","","","","","","","","","","","","",""],
-      ["Focal Point:",F.fo||"Project Team","","","","","","","","","","","","","",""],
-      ["Target Completion Date:",F.dl||"TBD","","","","","","","","","","","","","",""],
-      ["Modules in Scope:",mods.map(function(m){return m.name;}).join(", "),"","","","","","","","","","","","","",""],
-      ["Date Prepared:",t,"","","","","","","","","","","","","",""],
-      ["","","","","","","","","","","","","","","",""],
-      ["Instructions to Client:",F.rn||"Please complete all Critical and High priority items before the first BPR session.","","","","","","","","","","","","","",""],
-    ];
-    var covWs=XLSX.utils.aoa_to_sheet(cov);
-    covWs["!cols"]=[{wch:22},{wch:55}];
-    XLSX.utils.book_append_sheet(wb,covWs,"Cover");
+  var cw=[2340,7020];
+  var xml="";
+  xml+=wxPara(wxText("Cloud Environment Setup Request",true,"185FA5",30),"center");
+  xml+=wxPara(wxText(c+"  |  "+t,false,"5F5E5A",18),"center");
+  xml+=wxPara(wxText(""),"left");
 
-    // ── RFI Index sheet (matches your real template columns exactly) ──────────
-    var hdr=["Sr.No.","Yardi Module","BPR Reference","Requirements (What we want?)","Department","Priority","Project Team Member","Shared Date","Target Date","Received Status","Received Date","Remarks","Closure Remarks","Delayed Days","Dependency","Configured in Live"];
-    var rows=[hdr];
-    var sr=1;
-    filt.forEach(function(r){
-      rows.push([sr++,r[1],r[2],r[3]+(r[6]==="ETL"?" (ETL – Data Template Required)":""),r[4],r[5],co,"",F.dl||"","Pending","","","","","",""]);
-    });
-    var idxWs=XLSX.utils.aoa_to_sheet(rows);
-    idxWs["!cols"]=[{wch:7},{wch:18},{wch:13},{wch:50},{wch:20},{wch:11},{wch:22},{wch:13},{wch:13},{wch:16},{wch:14},{wch:20},{wch:18},{wch:13},{wch:14},{wch:16}];
-    XLSX.utils.book_append_sheet(wb,idxWs,"RFI Index");
-
-    // ── Per-module sheets ─────────────────────────────────────────────────────
-    var modGroups={};
-    filt.forEach(function(r){
-      var key=r[1];
-      if(!modGroups[key])modGroups[key]=[];
-      modGroups[key].push(r);
-    });
-    Object.keys(modGroups).forEach(function(modName){
-      var mhdr=["Sr.No.","BPR Reference","Requirements (What we want?)","Department","Priority","Project Team Member","Shared Date","Target Date","Received Status","Received Date","Remarks"];
-      var mrows=[mhdr];
-      var msr=1;
-      modGroups[modName].forEach(function(r){mrows.push([msr++,r[2],r[3]+(r[6]==="ETL"?" (ETL – Data Template Required)":""),r[4],r[5],co,"",F.dl||"","Pending","",""]);});
-      var mws=XLSX.utils.aoa_to_sheet(mrows);
-      mws["!cols"]=[{wch:7},{wch:13},{wch:50},{wch:20},{wch:11},{wch:22},{wch:13},{wch:13},{wch:16},{wch:14},{wch:20}];
-      XLSX.utils.book_append_sheet(wb,mws,modName.substring(0,28));
-    });
-
-    XLSX.writeFile(wb,"RFI_"+c.replace(/\s+/g,"_")+".xlsx");
-    done.add(4);
-  }catch(e){alert("Error generating RFI: "+e.message);}
-  loading.rfi=false;re();
+  xml+="<w:tbl><w:tblPr><w:tblW w:w=\"9360\" w:type=\"dxa\"/></w:tblPr><w:tblGrid><w:gridCol w:w=\""+cw[0]+"\"/><w:gridCol w:w=\""+cw[1]+"\"/></w:tblGrid>";
+  rows.forEach(function(r,i){
+    var shade=r[0]?( i%2===1?"F5F5F5":"FFFFFF"):"FFFFFF";
+    var lshade=r[0]?"E6F1FB":"FFFFFF";
+    xml+="<w:tr>"+wxDataCell(r[0],cw[0],lshade)+wxDataCell(r[1],cw[1],shade)+"</w:tr>";
+  });
+  xml+="</w:tbl>";
+  xml+=wxPara(wxText(""),"left");
+  xml+=wxPara(wxText("Dear Team,",true,"2C2C2A",20),"left");
+  xml+=wxPara(wxText("Please find the environment readiness request for "+c+" detailed in the table above. Kindly proceed with the setup at your earliest convenience.",false,"2C2C2A",20),"left");
+  xml+=wxPara(wxText(""),"left");
+  xml+=wxPara(wxText("Best regards,",false,"2C2C2A",20),"left");
+  xml+=wxPara(wxText(co,true,"2C2C2A",20),"left");
+  xml+=wxPara(wxText("Yardi Implementation Consultant  |  Yardi Systems, Inc.",false,"5F5E5A",18),"left");
+  xml+=wxPara(wxText(""),"left");
+  xml+="<w:sectPr><w:pgSz w:w=\"12240\" w:h=\"15840\"/><w:pgMar w:top=\"1440\" w:right=\"1440\" w:bottom=\"1440\" w:left=\"1440\"/></w:sectPr>";
+  return xml;
 }
 
-// ── UI Render ─────────────────────────────────────────────────────────────────
+// ── UI ────────────────────────────────────────────────────────────────────────
 function re(){
   rp();
   document.getElementById("nav").innerHTML=STEPS.map(function(s,i){var c="ni"+(step===i?" act":"")+(done.has(i)?" done":"");return'<div class="'+c+'" onclick="go('+i+')">'+'<div class="nd">'+(done.has(i)?"✓":i+1)+'</div><div class="nl">'+s+'</div></div>';}).join("");
-  [p1,p2,p3,p4,p5,p6][step]&&(document.getElementById("main").innerHTML=[p1,p2,p3,p4,p5,p6][step]());
+  [p0,p1,p2,p3,p4,p5,p6][step]&&(document.getElementById("main").innerHTML=[p0,p1,p2,p3,p4,p5,p6][step]());
 }
+
 function fl(lb,k,ph,tp,ex){
   var v=F[k]||"",fu=(ex&&ex.full)?"full":"";
   if(tp==="select"){var o=(ex.opts||[]).map(function(x){return'<option'+(v===x?' selected':'')+'>'+x+'</option>';}).join("");return'<div class="'+fu+'"><label class="lbl">'+lb+'</label><select onchange="sf(\''+k+'\',this.value)">'+o+'</select></div>';}
   if(tp==="textarea"){return'<div class="'+fu+'"><label class="lbl">'+lb+'</label><textarea onchange="sf(\''+k+'\',this.value)" placeholder="'+ph+'">'+esc(v)+'</textarea></div>';}
   return'<div class="'+fu+'"><label class="lbl">'+lb+'</label><input type="'+(tp||"text")+'" value="'+esc(v)+'" oninput="sf(\''+k+'\',this.value)" placeholder="'+ph+'"></div>';
 }
-function ldBtn(key,label,onclick){var ld=loading[key];return'<button class="btn bp" '+(ld?'disabled':'')+' onclick="'+onclick+'">'+(ld?'<span class="spin"></span> Generating...':'⬇ Download '+label)+'</button>';}
-function doneBar(key,filename){return done.has(key)||false?'':'';} // handled by button state
+
+function ldBtn(key,label,fn){
+  var ld=loading[key];
+  var isDone=done.has(parseInt(key==="email"?2:key==="agenda"?3:key==="rfi"?5:4));
+  return'<button class="btn '+(isDone?"bg":"bp")+'" '+(ld?"disabled":"")+' onclick="'+fn+'">'+(ld?'<span class="spin"></span> Downloading...':(isDone?"✓ Re-download ":"⬇ Download ")+label)+'</button>';
+}
+
+// Step 0: GitHub setup
+function p0(){
+  var configured = GITHUB_USER !== "YOUR_GITHUB_USERNAME";
+  return'<div><div class="pt">GitHub Setup</div>'
+    +'<div class="ps">This agent fetches your real template files directly from your GitHub repository.</div>'
+    +(configured
+      ?'<div class="info" style="background:#dcfce7;border-color:#bbf7d0;color:#166534">✓ Connected to: github.com/'+esc(GITHUB_USER)+'/'+esc(GITHUB_REPO)+'</div>'
+      :'<div class="warn">⚠️ You need to configure your GitHub details inside this HTML file before using it.</div>'
+    )
+    +'<div class="ghcard"><div class="ct">How to set this up (one time only)</div>'
+    +'<div style="display:flex;flex-direction:column;gap:10px">'
+    +'<div style="display:flex;align-items:flex-start;gap:8px"><span class="step-label">1</span><div><strong>Upload your templates to GitHub</strong><br><span style="color:#666">In your GitHub repository, create a folder called <code style="background:#e5e7eb;padding:1px 5px;border-radius:3px">templates</code> and upload all 6 files:<br>• 01-_Business_Process_Requirement_-_Vendor_Cafe.docx<br>• 02-_Business_Process_Requirement_-_Procure_to_Pay.docx<br>• 03_-_Business_Process_Requirement_-_FA.docx<br>• 04_-_Business_Process_Requirement_-_Work_Orders.docx<br>• 05-_Business_Process_Requirement_-_Inspection_and_PPM.docx<br>• RFI_Collection_Sheet.xlsx</span></div></div>'
+    +'<div style="display:flex;align-items:flex-start;gap:8px"><span class="step-label">2</span><div><strong>Edit this HTML file</strong><br><span style="color:#666">Open <code style="background:#e5e7eb;padding:1px 5px;border-radius:3px">index.html</code> in TextEdit and find these 3 lines near the top of the script:<br><code style="background:#e5e7eb;padding:2px 6px;border-radius:3px;display:block;margin:4px 0">var GITHUB_USER = "YOUR_GITHUB_USERNAME";<br>var GITHUB_REPO = "yardi-agent";<br>var GITHUB_BRANCH = "main";</code>Replace <code>YOUR_GITHUB_USERNAME</code> with your actual GitHub username.</span></div></div>'
+    +'<div style="display:flex;align-items:flex-start;gap:8px"><span class="step-label">3</span><div><strong>Upload the updated index.html to GitHub</strong><br><span style="color:#666">Commit the file — your GitHub Pages site will update in 30 seconds.</span></div></div>'
+    +'</div></div>'
+    +(configured?'<button class="btn bp" onclick="go(1)">Continue to project details →</button>':'<div class="warn" style="margin-top:12px">Complete steps 1–3 above, then refresh this page.</div>')
+    +'</div>';
+}
 
 function p1(){
-  var mH=MODS.map(function(m){var on=am.has(m.id);return'<div class="mo'+(on?' on':'')+'" onclick="tm(\''+m.id+'\')">'+'<div class="mc">'+(on?'✓':'')+'</div><div><div class="mn">'+m.name+'</div><div class="md">'+m.desc+'</div></div></div>';}).join("");
+  var mH=MODS.map(function(m){var on=am.has(m.id);return'<div class="mo'+(on?' on':'')+'" onclick="tm(\''+m.id+'\')">'+'<div class="mc">'+(on?"✓":"")+'</div><div><div class="mn">'+m.name+'</div><div class="md">'+m.desc+'</div></div></div>';}).join("");
   var dH=DBS.map(function(d){return'<span class="db '+(adb.has(d)?'on':'off')+'" onclick="tdb(\''+d+'\')">'+d+'</span>';}).join("");
   return'<div><div class="pt">Project details &amp; module selection</div><div class="ps">Fill in your client information and select the modules in scope.</div>'
     +'<div class="card"><div class="ct">Client information</div><div class="g2">'+fl("Client name *","name","e.g. Naufar")+fl("Client PIN *","pin","e.g. 100052729")+fl("Time zone","tz","","select",{opts:["","UAE (GST +4)","Qatar (AST +3)","KSA (AST +3)","Kuwait (+3)","Bahrain (+3)","Oman (+4)"]})+fl("Source DB for restore","sdb","e.g. zehqlfppi_resglive")+fl("Live webshare URL","lw","e.g. https://live.yardi.com/client")+fl("Test webshare URL","tw","e.g. https://test.yardi.com/client")+fl("Consultant name(s)","con","e.g. Anas Takala, Rajat Agarwal","text",{full:true})+fl("Service Manager","sm","","select",{opts:["Yes","No"]})+fl("PI list notes","pi","e.g. As per attached list")+'</div><hr class="div"><div class="lbl">Databases to create (click to toggle)</div><div class="dbs">'+dH+'</div></div>'
     +'<div class="card"><div class="ct">Module selection (click to toggle)</div><div class="mods">'+mH+'</div></div>'
-    +'<button class="btn bp" onclick="go(1)">Continue →</button></div>';
+    +'<button class="btn bp" onclick="go(2)">Continue →</button></div>';
 }
-function p2(){return'<div><div class="pt">Cloud environment setup email</div><div class="ps">Click the button below to generate and download a formatted Word document.</div><div class="card"><div class="ct">Recipients</div><div class="g2">'+fl("To (cloud team)","to","Nereah.Abwao@Yardi.Com")+fl("CC (project team)","cc","Rajat.Agarwal@Yardi.Com, ...")+fl("Special notes","cn","e.g. DBs to be copy of AIM GOLD DB.","textarea",{full:true})+'</div></div>'+ldBtn("email","Email .docx","genEmail()")+'<div class="brow"><button class="btn bs" onclick="go(0)">← Back</button><button class="btn bp" onclick="go(2)">Continue →</button></div></div>';}
-function p3(){var rH=tr.map(function(r,i){return'<div class="tr"><input value="'+esc(r)+'" oninput="tr['+i+']=this.value" placeholder="Name — Role"><button class="rm" onclick="rt('+i+')">✕</button></div>';}).join("");return'<div><div class="pt">BPR session agenda</div><div class="ps">Click to generate and download a formatted Word document (landscape, A4).</div><div class="card"><div class="ct">Session schedule</div><div class="g2">'+fl("Start date","bf","","date")+fl("End date","bu","","date")+fl("Daily start time","st","10:00 AM")+fl("Hours per session","sd","3")+'</div></div><div class="card"><div class="ct">Yardi team members</div>'+rH+'<button class="al" onclick="at()">+ Add member</button></div>'+ldBtn("agenda","Agenda .docx","genAgenda()")+'<div class="brow"><button class="btn bs" onclick="go(1)">← Back</button><button class="btn bp" onclick="go(3)">Continue →</button></div></div>';}
+
+function p2(){
+  return'<div><div class="pt">Cloud environment setup email</div><div class="ps">Downloads a formatted Word document using your real template structure.</div>'
+    +'<div class="card"><div class="ct">Recipients</div><div class="g2">'+fl("To (cloud team)","to","Nereah.Abwao@Yardi.Com")+fl("CC (project team)","cc","Rajat.Agarwal@Yardi.Com, ...")+fl("Special notes","cn","e.g. DBs to be copy of AIM GOLD DB.","textarea",{full:true})+'</div></div>'
+    +ldBtn("email","Email .docx","genEmail()")
+    +'<div class="brow"><button class="btn bs" onclick="go(1)">← Back</button><button class="btn bp" onclick="go(3)">Continue →</button></div></div>';
+}
+
+function p3(){
+  var rH=tr.map(function(r,i){return'<div class="tr"><input value="'+esc(r)+'" oninput="tr['+i+']=this.value" placeholder="Name — Role"><button class="rm" onclick="rt('+i+')">✕</button></div>';}).join("");
+  return'<div><div class="pt">BPR session agenda</div><div class="ps">Downloads a landscape Word document with your full session schedule.</div>'
+    +'<div class="card"><div class="ct">Session schedule</div><div class="g2">'+fl("Start date","bf","","date")+fl("End date","bu","","date")+fl("Daily start time","st","10:00 AM")+fl("Hours per session","sd","3")+'</div></div>'
+    +'<div class="card"><div class="ct">Yardi team members</div>'+rH+'<button class="al" onclick="at()">+ Add member</button></div>'
+    +ldBtn("agenda","Agenda .docx","genAgenda()")
+    +'<div class="brow"><button class="btn bs" onclick="go(2)">← Back</button><button class="btn bp" onclick="go(4)">Continue →</button></div></div>';
+}
+
 function p4(){
-  var tabs=sm().filter(function(m){return TREQS[m.id];});
-  var tH=tabs.map(function(m){return'<button class="tb'+(bt===m.id?' on':'')+'" onclick="sbt(\''+m.id+'\')">'+TN[m.id]+'</button>';}).join("");
+  var tabs=sm().filter(function(m){return TEMPLATES[m.id];});
+  var tH=tabs.map(function(m){return'<button class="tb'+(bt===m.id?" on":"")+'" onclick="sbt(\''+m.id+'\')">'+TN[m.id]+'</button>';}).join("");
   var cur=tabs.find(function(m){return m.id===bt;});
-  var body=cur?'<div class="card"><div class="ct">'+TN[bt]+' BPR <span style="font-size:10px;color:#888;font-weight:400">— follows your uploaded template exactly</span></div><div style="margin-bottom:10px"><label class="lbl">Additional client-specific notes (optional)</label><textarea oninput="bc[\''+bt+'\']=this.value" placeholder="e.g. Client has 150 vendors, uses EFT only, 3-level approval DOA...">'+(bc[bt]||"")+'</textarea></div>'+ldBtn("bpr_"+bt,TN[bt]+" .docx","genBpr('"+bt+"')")+'</div>':'<div class="info">No modules selected. Go back to Step 1.</div>';
-  return'<div><div class="pt">BPR documents</div><div class="ps">Each module generates a complete Word document following your real uploaded template.</div><div class="info">📄 Structure: Version Control → Sign Off → Copyright → Overview → Requirements Table → Additional Requirements → RFI reference. "XX" replaced with client name throughout.</div><div class="tbr">'+tH+'</div>'+body+'<div class="brow"><button class="btn bs" onclick="go(2)">← Back</button><button class="btn bp" onclick="go(4)">Continue →</button></div></div>';
+  var body=cur
+    ?'<div class="card"><div class="ct">'+TN[bt]+' BPR <span style="font-size:10px;color:#16a34a;font-weight:400;background:#dcfce7;padding:2px 7px;border-radius:20px;margin-left:4px">📄 from your real template</span></div>'
+     +'<div class="info">Your template file will be fetched from GitHub, all XX placeholders replaced with "'+esc(cl())+'", and the completed document downloaded directly.</div>'
+     +ldBtn("bpr_"+bt,TN[bt]+" .docx","genBpr('"+bt+"')")+"</div>"
+    :'<div class="info">No modules selected. Go back to Step 2.</div>';
+  return'<div><div class="pt">BPR documents</div>'
+    +'<div class="ps">Each document is your real uploaded template with client data filled in — not generated from scratch.</div>'
+    +'<div class="tbr">'+tH+'</div>'+body
+    +'<div class="brow"><button class="btn bs" onclick="go(3)">← Back</button><button class="btn bp" onclick="go(5)">Continue →</button></div></div>';
 }
-function p5(){return'<div><div class="pt">RFI collection sheet</div><div class="ps">Generates a real Excel file matching your original RFI template — same columns, filtered to selected modules.</div><div class="card"><div class="ct">Configuration</div><div class="g2">'+fl("Project focal point","fo","e.g. John Smith")+fl("Target completion date","dl","","date")+fl("Instructions for client","rn","e.g. Please fill Critical items before first BPR session.","textarea",{full:true})+'</div></div>'+ldBtn("rfi","RFI .xlsx","genRfi()")+'<div class="brow"><button class="btn bs" onclick="go(3)">← Back</button><button class="btn bp" onclick="go(5)">Continue →</button></div></div>';}
+
+function p5(){
+  return'<div><div class="pt">RFI collection sheet</div><div class="ps">Your real RFI template fetched from GitHub, client name filled in, filtered to selected modules.</div>'
+    +'<div class="card"><div class="ct">Configuration</div><div class="g2">'+fl("Project focal point","fo","e.g. John Smith")+fl("Target completion date","dl","","date")+fl("Instructions for client","rn","e.g. Please fill Critical items before first BPR session.","textarea",{full:true})+'</div></div>'
+    +ldBtn("rfi","RFI .xlsx","genRfi()")
+    +'<div class="brow"><button class="btn bs" onclick="go(4)">← Back</button><button class="btn bp" onclick="go(6)">Continue →</button></div></div>';
+}
+
 function p6(){
-  var ds=[{key:"email",lb:"Cloud Setup Email .docx",step:1,fn:"genEmail()"},{key:"agenda",lb:"BPR Session Agenda .docx",step:2,fn:"genAgenda()"}];
-  sm().filter(function(m){return TREQS[m.id];}).forEach(function(m){ds.push({key:"bpr_"+m.id,lb:TN[m.id]+" BPR .docx",step:3,fn:"genBpr('"+m.id+"')"});});
-  ds.push({key:"rfi",lb:"RFI Collection Sheet .xlsx",step:4,fn:"genRfi()"});
+  var ds=[
+    {key:"email",lb:"Cloud Email .docx",step:2,fn:"genEmail()"},
+    {key:"agenda",lb:"BPR Agenda .docx",step:3,fn:"genAgenda()"},
+  ];
+  sm().filter(function(m){return TEMPLATES[m.id];}).forEach(function(m){ds.push({key:"bpr_"+m.id,lb:TN[m.id]+" BPR .docx",step:4,fn:"genBpr('"+m.id+"')"});});
+  ds.push({key:"rfi",lb:"RFI Collection .xlsx",step:5,fn:"genRfi()"});
+  var stepMap={};ds.forEach(function(d){stepMap[d.key]=d.step;});
   var rdy=ds.filter(function(d){return done.has(d.step);}).length;
   var stats='<div class="rg">'+[["Client",cl()],["Modules",sm().length+" selected"],["Downloaded",rdy+" / "+ds.length]].map(function(p){return'<div class="sc"><div class="sl">'+p[0]+'</div><div class="sv">'+p[1]+'</div></div>';}).join("")+'</div>';
-  var cards=ds.map(function(d){var ok=done.has(d.step),ld=loading[d.key];return'<div class="dc"><div class="dh"><span class="dn">'+d.lb+'</span><span class="bk '+(ok?"bok":"bpn")+'">'+(ok?"✓ Downloaded":"Pending")+'</span></div><div class="dd">'+(ok?"File downloaded to your Downloads folder.":"Generate from the relevant step.")+'</div><button class="btn '+(ok?"bg":"bp")+'" style="font-size:11px;padding:5px 11px" '+(ld?"disabled":"")+' onclick="'+d.fn+'">'+(ld?'<span class="spin"></span>':ok?"↓ Re-download":"↓ Generate & Download")+'</button></div>';}).join("");
-  return'<div><div class="pt">Review &amp; download all files</div><div class="ps">All deliverables for '+cl()+'. Each button generates and downloads the real file.</div>'+stats+'<div class="dg">'+cards+'</div><div class="brow"><button class="btn bs" onclick="go(4)">← Back</button></div></div>';
+  var cards=ds.map(function(d){var ok=done.has(d.step),ld=loading[d.key];return'<div class="dc"><div class="dh"><span class="dn">'+d.lb+'</span><span class="bk '+(ok?"bok":"bpn")+'">'+(ok?"✓ Downloaded":"Pending")+'</span></div><div class="dd">'+(ok?"Saved to your Downloads folder.":"Not yet generated.")+'</div><button class="btn '+(ok?"bg":"bp")+'" style="font-size:11px;padding:5px 12px" '+(ld?"disabled":"")+' onclick="'+d.fn+'">'+(ld?'<span class="spin"></span>':(ok?"↓ Re-download":"↓ Download"))+'</button></div>';}).join("");
+  return'<div><div class="pt">Review &amp; download</div><div class="ps">All files for '+esc(cl())+'. Each downloads your real template with client data filled in.</div>'+stats+'<div class="dg">'+cards+'</div><div class="brow"><button class="btn bs" onclick="go(5)">← Back</button></div></div>';
 }
+
 re();
 </script>
 </body>
