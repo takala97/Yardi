@@ -96,11 +96,11 @@ var GITHUB_REPO   = "Yardi";                // your repository name
 var GITHUB_BRANCH = "main";
 // Template file names exactly as stored in your GitHub repo
 var TEMPLATES = {
-  vc:  "01-_Business_Process_Requirement_-_Vendor_Cafe.docx",
-  p2p: "02-_Business_Process_Requirement_-_Procure_to_Pay.docx",
-  fa:  "03_-_Business_Process_Requirement_-_FA.docx",
-  wo:  "04_-_Business_Process_Requirement_-_Work_Orders.docx",
-  fm:  "05-_Business_Process_Requirement_-_Inspection_and_PPM.docx",
+  vc:  "01-_Business_Process_Requirement_-_Vendor_Cafe.docx.docx",
+  p2p: "02-_Business_Process_Requirement_-_Procure_to_Pay.docx.docx",
+  fa:  "03-._Business_Process_Requirement_-_FA.docx.docx",
+  wo:  "04-._Business_Process_Requirement_-_Work_Orders.docx.docx",
+  fm:  "05-_Business_Process_Requirement_-_Inspection_and_PPM.docx.docx",
   rfi: "RFI_Collection_Sheet.xlsx"
 };
 // ─────────────────────────────────────────────────────────────────────────────
@@ -193,6 +193,7 @@ async function genBpr(id){
     // The version table has XX in date col and XX in author col
     // We'll handle this by doing a more targeted XML edit
     var processed = await processDocxSmart(buf, c, F.con||"Yardi Consultant", tdShort());
+    // processDocxSmart now handles all {{TOKEN}} replacements automatically
     var safe = c.replace(/\s+/g,"_");
     dlFile(processed, "BPR_"+TN[id].replace(/\s+/g,"_")+"_"+safe+".docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
     done.add(4);
@@ -202,62 +203,33 @@ async function genBpr(id){
   loading["bpr_"+id]=false; re();
 }
 
-// Smart DOCX processor — handles XX in text and version table
+// Smart DOCX processor — replaces all {{TOKENS}} in template
 async function processDocxSmart(arrayBuffer, clientName, consultant, dateStr){
   var zip = await JSZip.loadAsync(arrayBuffer);
-  var docXml = await zip.files["word/document.xml"].async("string");
-
-  // Step 1: Fix XX that's split across XML runs
-  // Pattern: XX may be split like <w:t>X</w:t>...<w:t>X</w:t>
-  // We need to handle this carefully
-
-  // First, do simple full-text replacements (works when XX is in one run)
-  docXml = replaceXXInXml(docXml, clientName, consultant, dateStr);
-
-  zip.file("word/document.xml", docXml);
-  return await zip.generateAsync({type:"arraybuffer", compression:"DEFLATE"});
-}
-
-function replaceXXInXml(xml, clientName, consultant, dateStr){
-  // The XX placeholder appears in:
-  // 1. Overview paragraph: "to XX Business Processes..."
-  // 2. Version control table row 1: date cell (XX) and author cell (XX)
-
-  // We use a state machine approach:
-  // Track when we're in the 2nd data row of the version control table
-  // and replace XX with date in col 1, consultant in col 2
-
-  var result = xml;
-
-  // Simple replacement first — catches XX in single text runs
-  // In XML, text is in <w:t>...</w:t> tags
-  // Replace XX with client name in content paragraphs
-  result = result.replace(/<w:t([^>]*)>([^<]*XX[^<]*)<\/w:t>/g, function(match, attrs, text){
-    return '<w:t'+attrs+'>'+text.replace(/XX/g, clientName)+'<\/w:t>';
-  });
-
-  // Handle split runs: X</w:t></w:r><w:r...><w:t>X
-  // This is trickier — we need to merge adjacent runs that together spell XX
-  result = mergeSplitXX(result, clientName);
-
-  return result;
-}
-
-function mergeSplitXX(xml, replacement){
-  // Find pattern where X and X are in adjacent runs and merge them
-  // Simple approach: find </w:t></w:r> followed by <w:r...><w:t...>X patterns
-  var cleaned = xml;
-
-  // Pattern: single X in a run text node — likely part of split XX
-  // Look for isolated X characters between word runs and merge
-  // This handles: ...>X</w:t></w:r><w:r><w:rPr>...</w:rPr><w:t>X</w:t>...
-  cleaned = cleaned.replace(/<w:t([^>]*)>X<\/w:t>(<\/w:r>(?:<w:bookmarkStart[^\/]*\/>|<w:bookmarkEnd[^\/]*\/>)*<w:r>(?:<w:rPr>[\s\S]*?<\/w:rPr>)?)<w:t([^>]*)>X<\/w:t>/g,
-    function(match, a1, middle, a2){
-      return '<w:t'+a1+'>'+replacement+'</w:t>'+middle+'<w:t'+a2+'></w:t>';
+  var tokens = {
+    "{{CLIENT_NAME}}":     clientName,
+    "{{CONSULTANT_NAME}}": consultant,
+    "{{DATE}}":            dateStr,
+    "{{CLIENT_PIN}}":      F.pin  || "",
+    "{{TIMEZONE}}":        F.tz   || "",
+    "{{LIVE_WEBSHARE}}":   F.lw   || "",
+    "{{TEST_WEBSHARE}}":   F.tw   || "",
+    "{{SERVICE_MANAGER}}": F.sm   || "",
+    "{{BPR_FROM}}":        F.bf   || "",
+    "{{BPR_UNTIL}}":       F.bu   || "",
+  };
+  var filesToProcess = ["word/document.xml","word/header1.xml","word/footer1.xml","word/header2.xml","word/footer2.xml"];
+  for(var i=0;i<filesToProcess.length;i++){
+    var fname=filesToProcess[i];
+    if(!zip.files[fname]) continue;
+    var xml = await zip.files[fname].async("string");
+    for(var token in tokens){
+      var safeVal=String(tokens[token]).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+      xml = xml.split(token).join(safeVal);
     }
-  );
-
-  return cleaned;
+    zip.file(fname, xml);
+  }
+  return await zip.generateAsync({type:"arraybuffer",compression:"DEFLATE"});
 }
 
 // ── Generate Agenda from real BPR template (Vendor Cafe as base) ─────────────
