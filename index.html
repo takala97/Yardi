@@ -288,6 +288,7 @@ async function zipReplaceTokens(arrayBuffer, tokens, xe, xmlTargets){
       var r=replacements[e.fn];
       fd=r.data;
       w32(lh,14,r.crc); w32(lh,18,r.cs); w32(lh,22,r.us);
+      lh[8]=0; lh[9]=0; // STORE
     } else {
       fd=src.slice(ds,ds+e.cs);
     }
