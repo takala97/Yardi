@@ -86,7 +86,8 @@ hr.div{border:none;border-top:1px solid #e8e8e8;margin:12px 0}
   </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pizzip/3.1.4/pizzip.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/docxtemplater@3.44.0/build/docxtemplater.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 <script>
@@ -169,7 +170,7 @@ async function processDocx(arrayBuffer, replacements){
     zip.file(fname, content);
   }
 
-  return await zip.generateAsync({type:"arraybuffer", compression:"DEFLATE"});
+  return zip.generate({type:"arraybuffer",compression:"DEFLATE",compressionOptions:{level:6},mimeType:"application/vnd.openxmlformats-officedocument.wordprocessingml.document"});
 }
 
 // ── Download a file ───────────────────────────────────────────────────────────
@@ -210,68 +211,50 @@ async function genBpr(id){
 
 // Smart DOCX processor — replaces all {{TOKENS}} in template
 async function processDocxSmart(arrayBuffer, clientName, consultant, dateStr, extraTokens){
-  // Build full token map
+  // Use PizZip + Docxtemplater — the proper libraries for docx templating in browser
+  // These handle large images and complex docx files without corruption
   var tokens = {
-    "{{CLIENT_NAME}}":     clientName,
-    "{{CONSULTANT_NAME}}": consultant,
-    "{{DATE}}":            dateStr,
-    "{{SESSION_DATE}}":    (extraTokens && extraTokens.sessionDate)    || dateStr,
-    "{{WORKSHOP_OWNER}}":  (extraTokens && extraTokens.workshopOwner)  || consultant,
-    "{{CLIENT_PIN}}":      F.pin  || "",
-    "{{TIMEZONE}}":        F.tz   || "",
-    "{{LIVE_WEBSHARE}}":   F.lw   || "",
-    "{{TEST_WEBSHARE}}":   F.tw   || "",
-    "{{SERVICE_MANAGER}}": F.sm   || "",
-    "{{BPR_FROM}}":        F.bf   || "",
-    "{{BPR_UNTIL}}":       F.bu   || "",
+    CLIENT_NAME:     clientName,
+    CONSULTANT_NAME: consultant,
+    DATE:            dateStr,
+    SESSION_DATE:    (extraTokens && extraTokens.sessionDate)   || dateStr,
+    WORKSHOP_OWNER:  (extraTokens && extraTokens.workshopOwner) || consultant,
+    CLIENT_PIN:      F.pin  || "",
+    TIMEZONE:        F.tz   || "",
+    LIVE_WEBSHARE:   F.lw   || "",
+    TEST_WEBSHARE:   F.tw   || "",
+    SERVICE_MANAGER: F.sm   || "",
+    BPR_FROM:        F.bf   || "",
+    BPR_UNTIL:       F.bu   || "",
   };
 
-  function xe(s){
-    return String(s||"")
-      .replace(/&/g,"&amp;")
-      .replace(/</g,"&lt;")
-      .replace(/>/g,"&gt;");
-  }
-
-  // XML files we need to process for token replacement
-  var xmlFiles = [
-    "word/document.xml","word/header1.xml","word/footer1.xml",
-    "word/header2.xml","word/footer2.xml","word/header3.xml","word/footer3.xml"
-  ];
-
-  // ── Proper binary-safe approach using raw zip manipulation ────────────────
-  // We work directly with the ArrayBuffer to avoid JSZip recompressing binary
-  var zip = await JSZip.loadAsync(arrayBuffer);
-
-  // Process only XML files — replace tokens
-  for(var i=0; i<xmlFiles.length; i++){
-    var fname = xmlFiles[i];
-    if(!zip.files[fname]) continue;
-    var xml = await zip.files[fname].async("string");
-    for(var token in tokens){
-      xml = xml.split(token).join(xe(tokens[token]));
-    }
-    // Store without compression to prevent corruption
-    zip.file(fname, xml, {compression:"STORE"});
-  }
-
-  // Generate final file — use STORE for everything to be safe
-  var result = await zip.generateAsync({
-    type: "arraybuffer",
-    compression: "STORE"
+  var zip = new PizZip(arrayBuffer);
+  var doc = new docxtemplater(zip, {
+    paragraphLoop: true,
+    linebreaks: true,
+    delimiters: {start: "{{", end: "}}"},
+    nullGetter: function(part){ return ""; },
   });
 
-  return result;
+  doc.render(tokens);
+
+  var out = doc.getZip().generate({
+    type: "arraybuffer",
+    mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    compression: "DEFLATE",
+    compressionOptions: {level: 6}
+  });
+
+  return out;
 }
 
 
-// ── Generate Agenda from real BPR template (Vendor Cafe as base) ─────────────
 async function genAgenda(){
   loading.agenda=true; re();
   try{
     var buf = await fetchTemplate(TEMPLATES.agenda);
-    var zip = await JSZip.loadAsync(buf);
-    var docXml = await zip.files["word/document.xml"].async("string");
+    var zip = new PizZip(buf);
+    var docXml = zip.files["word/document.xml"].asText();
 
     // Replace header tokens
     function xe(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
@@ -286,7 +269,7 @@ async function genAgenda(){
       function(m,hdr,_old,close){ return hdr + rowsXml + close; });
 
     zip.file("word/document.xml", docXml);
-    var processed = await zip.generateAsync({type:"arraybuffer",compression:"DEFLATE"});
+    var processed = zip.generate({type:"arraybuffer",compression:"DEFLATE",compressionOptions:{level:6},mimeType:"application/vnd.openxmlformats-officedocument.wordprocessingml.document"});
     dlFile(processed,"BPR_Agenda_"+cl().replace(/\s+/g,"_")+".docx","application/vnd.openxmlformats-officedocument.wordprocessingml.document");
     done.add(2);
   }catch(e){alert("Error generating agenda: "+e.message);}
@@ -466,10 +449,10 @@ async function genEmail(){
     var buf = await fetchTemplate(TEMPLATES.vc);
     var zip = await JSZip.loadAsync(buf);
     var emailXml = buildEmailXml();
-    var docXml = await zip.files["word/document.xml"].async("string");
+    var docXml = zip.files["word/document.xml"].asText();
     docXml = docXml.replace(/<w:body>[\s\S]*<\/w:body>/, "<w:body>"+emailXml+"</w:body>");
     zip.file("word/document.xml", docXml);
-    var processed = await zip.generateAsync({type:"arraybuffer", compression:"DEFLATE"});
+    var processed = zip.generate({type:"arraybuffer", compression:"DEFLATE", compressionOptions:{level:6}, mimeType:"application/vnd.openxmlformats-officedocument.wordprocessingml.document"});
     var safe = cl().replace(/\s+/g,"_");
     dlFile(processed, "Cloud_Email_"+safe+".docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
     done.add(2);
