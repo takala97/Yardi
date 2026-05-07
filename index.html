@@ -190,31 +190,33 @@ async function genBpr(id){
   try{
     var c = cl();
     var buf = await fetchTemplate(TEMPLATES[id]);
-    var replacements = {
-      "XX": c,
-      // Version control date/author are also XX in the templates
+    // Get per-module session details
+    var ms = moduleSessions[id] || {};
+    var sessionDate = ms.startDate ? fmtDate(new Date(ms.startDate)) : tdShort();
+    var workshopOwner = ms.workshopOwner || F.con || "Yardi Consultant";
+    var extraTokens = {
+      sessionDate: sessionDate,
+      workshopOwner: workshopOwner
     };
-    // We need smarter replacement for version table
-    // The version table has XX in date col and XX in author col
-    // We'll handle this by doing a more targeted XML edit
-    var processed = await processDocxSmart(buf, c, F.con||"Yardi Consultant", tdShort());
-    // processDocxSmart now handles all {{TOKEN}} replacements automatically
+    var processed = await processDocxSmart(buf, c, F.con||"Yardi Consultant", tdShort(), extraTokens);
     var safe = c.replace(/\s+/g,"_");
     dlFile(processed, "BPR_"+TN[id].replace(/\s+/g,"_")+"_"+safe+".docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
     done.add(4);
   }catch(e){
-    alert("Error: "+e.message);
+    alert("Error generating BPR: "+e.message);
   }
   loading["bpr_"+id]=false; re();
 }
 
 // Smart DOCX processor — replaces all {{TOKENS}} in template
-async function processDocxSmart(arrayBuffer, clientName, consultant, dateStr){
-  var zip = await JSZip.loadAsync(arrayBuffer);
+async function processDocxSmart(arrayBuffer, clientName, consultant, dateStr, extraTokens){
+  // Build full token map
   var tokens = {
     "{{CLIENT_NAME}}":     clientName,
     "{{CONSULTANT_NAME}}": consultant,
     "{{DATE}}":            dateStr,
+    "{{SESSION_DATE}}":    (extraTokens && extraTokens.sessionDate)    || dateStr,
+    "{{WORKSHOP_OWNER}}":  (extraTokens && extraTokens.workshopOwner)  || consultant,
     "{{CLIENT_PIN}}":      F.pin  || "",
     "{{TIMEZONE}}":        F.tz   || "",
     "{{LIVE_WEBSHARE}}":   F.lw   || "",
@@ -223,19 +225,45 @@ async function processDocxSmart(arrayBuffer, clientName, consultant, dateStr){
     "{{BPR_FROM}}":        F.bf   || "",
     "{{BPR_UNTIL}}":       F.bu   || "",
   };
-  var filesToProcess = ["word/document.xml","word/header1.xml","word/footer1.xml","word/header2.xml","word/footer2.xml"];
-  for(var i=0;i<filesToProcess.length;i++){
-    var fname=filesToProcess[i];
+
+  function xe(s){
+    return String(s||"")
+      .replace(/&/g,"&amp;")
+      .replace(/</g,"&lt;")
+      .replace(/>/g,"&gt;");
+  }
+
+  // XML files we need to process for token replacement
+  var xmlFiles = [
+    "word/document.xml","word/header1.xml","word/footer1.xml",
+    "word/header2.xml","word/footer2.xml","word/header3.xml","word/footer3.xml"
+  ];
+
+  // ── Proper binary-safe approach using raw zip manipulation ────────────────
+  // We work directly with the ArrayBuffer to avoid JSZip recompressing binary
+  var zip = await JSZip.loadAsync(arrayBuffer);
+
+  // Process only XML files — replace tokens
+  for(var i=0; i<xmlFiles.length; i++){
+    var fname = xmlFiles[i];
     if(!zip.files[fname]) continue;
     var xml = await zip.files[fname].async("string");
     for(var token in tokens){
-      var safeVal=String(tokens[token]).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-      xml = xml.split(token).join(safeVal);
+      xml = xml.split(token).join(xe(tokens[token]));
     }
-    zip.file(fname, xml);
+    // Store without compression to prevent corruption
+    zip.file(fname, xml, {compression:"STORE"});
   }
-  return await zip.generateAsync({type:"arraybuffer",compression:"DEFLATE"});
+
+  // Generate final file — use STORE for everything to be safe
+  var result = await zip.generateAsync({
+    type: "arraybuffer",
+    compression: "STORE"
+  });
+
+  return result;
 }
+
 
 // ── Generate Agenda from real BPR template (Vendor Cafe as base) ─────────────
 async function genAgenda(){
@@ -579,10 +607,14 @@ function p4(){
   var tabs=sm().filter(function(m){return TEMPLATES[m.id];});
   var tH=tabs.map(function(m){return'<button class="tb'+(bt===m.id?" on":"")+'" onclick="sbt(\''+m.id+'\')">'+TN[m.id]+'</button>';}).join("");
   var cur=tabs.find(function(m){return m.id===bt;});
+  var ms=moduleSessions[bt]||{};
   var body=cur
     ?'<div class="card"><div class="ct">'+TN[bt]+' BPR <span style="font-size:10px;color:#16a34a;font-weight:400;background:#dcfce7;padding:2px 7px;border-radius:20px;margin-left:4px">📄 from your real template</span></div>'
-     +'<div class="info">Your template file will be fetched from GitHub, all XX placeholders replaced with "'+esc(cl())+'", and the completed document downloaded directly.</div>'
-     +ldBtn("bpr_"+bt,TN[bt]+" .docx","genBpr('"+bt+"')")+"</div>"
+     +'<div class="g2">'
+     +'<div><label class="lbl">Session date</label><input type="date" value="'+esc(ms.startDate||"")+'" oninput="setMS(this.dataset.mid,\'startDate\',this.value)" data-mid="'+bt+'"></div>'
+     +'<div><label class="lbl">Workshop owner (consultant)</label><input type="text" value="'+esc(ms.workshopOwner||F.con||"")+'" oninput="setMS(this.dataset.mid,\'workshopOwner\',this.value)" data-mid="'+bt+'" placeholder="e.g. Anas Takala"></div>'
+     +'</div><div style="margin-top:10px">'
+     +ldBtn("bpr_"+bt,TN[bt]+" .docx","genBpr('"+bt+"')")+"</div></div>"
     :'<div class="info">No modules selected. Go back to Step 2.</div>';
   return'<div><div class="pt">BPR documents</div>'
     +'<div class="ps">Each document is your real uploaded template with client data filled in — not generated from scratch.</div>'
