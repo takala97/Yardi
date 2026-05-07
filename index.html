@@ -209,7 +209,8 @@ async function genBpr(id){
 
 // Smart DOCX processor — replaces all {{TOKENS}} in template
 async function processDocxSmart(arrayBuffer, clientName, consultant, dateStr, extraTokens){
-  var tokens = {
+  // Token map - values will be padded to exact token length to preserve ZIP structure
+  var tokenMap = {
     "{{CLIENT_NAME}}":     clientName || "",
     "{{CONSULTANT_NAME}}": consultant || "",
     "{{DATE}}":            dateStr || "",
@@ -223,12 +224,96 @@ async function processDocxSmart(arrayBuffer, clientName, consultant, dateStr, ex
     "{{BPR_FROM}}":        F.bf   || "",
     "{{BPR_UNTIL}}":       F.bu   || "",
   };
-  function xe(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
-  var xmlTargets={"word/document.xml":1,"word/header1.xml":1,"word/footer1.xml":1,"word/header2.xml":1,"word/footer2.xml":1,"word/header3.xml":1,"word/footer3.xml":1};
-  return await zipReplaceTokens(arrayBuffer, tokens, xe, xmlTargets);
+
+  function xe(s){ return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+  function r16(b,o){ return b[o]|(b[o+1]<<8); }
+  function r32(b,o){ return((b[o]|(b[o+1]<<8)|(b[o+2]<<16)|(b[o+3]<<24))>>>0); }
+  function w32(b,o,v){ b[o]=v&255;b[o+1]=(v>>8)&255;b[o+2]=(v>>16)&255;b[o+3]=(v>>24)&255; }
+
+  var data = new Uint8Array(arrayBuffer.slice(0));
+
+  // Find EOCD
+  var eocd=-1;
+  for(var i=data.length-22;i>=0;i--){
+    if(data[i]===0x50&&data[i+1]===0x4B&&data[i+2]===0x05&&data[i+3]===0x06){eocd=i;break;}
+  }
+  if(eocd<0) throw new Error("Not a valid ZIP");
+
+  var cdOff=r32(data,eocd+16), cdCnt=r16(data,eocd+10);
+
+  // Parse central directory
+  var entries=[], pos=cdOff;
+  for(var i=0;i<cdCnt;i++){
+    if(r32(data,pos)!==0x02014B50) break;
+    var cm=r16(data,pos+10),cs=r32(data,pos+20),us=r32(data,pos+24);
+    var fnl=r16(data,pos+28),exl=r16(data,pos+30),cml=r16(data,pos+32),lo=r32(data,pos+42);
+    var fn=new TextDecoder().decode(data.slice(pos+46,pos+46+fnl));
+    entries.push({fn:fn,cm:cm,cs:cs,us:us,lo:lo,fnl:fnl,exl:exl,cml:cml,cdp:pos});
+    pos+=46+fnl+exl+cml;
+  }
+
+  // Process STORE (cm=0) XML entries only
+  for(var ei=0;ei<entries.length;ei++){
+    var e=entries[ei];
+    if(e.cm!==0) continue; // skip compressed entries
+    if(!e.fn.endsWith(".xml")&&!e.fn.endsWith(".rels")) continue;
+
+    var lhFnl=r16(data,e.lo+26), lhExl=r16(data,e.lo+28);
+    var ds=e.lo+30+lhFnl+lhExl;
+    var fileBytes=data.slice(ds,ds+e.cs);
+
+    // Check if any token exists in this file
+    var xml=new TextDecoder("utf-8").decode(fileBytes);
+    var changed=false;
+
+    for(var token in tokenMap){
+      if(xml.indexOf(token)===-1) continue;
+      // Pad value to EXACT token length to preserve file size
+      var raw=xe(tokenMap[token]);
+      var padded=raw.length>=token.length
+        ? raw.substring(0,token.length)
+        : raw+(new Array(token.length-raw.length+1).join(" "));
+      // Replace all occurrences
+      while(xml.indexOf(token)!==-1){
+        xml=xml.replace(token,padded);
+      }
+      changed=true;
+    }
+
+    if(!changed) continue;
+
+    var newBytes=new TextEncoder().encode(xml);
+    if(newBytes.length!==fileBytes.length){
+      // Length mismatch - skip this file to avoid corruption
+      continue;
+    }
+
+    // Write new bytes into data
+    data.set(newBytes, ds);
+
+    // Update CRC32 in local header (offset lo+14) and CD (offset cdp+16)
+    var newCrc=crc32js(newBytes);
+    w32(data,e.lo+14,newCrc);
+    w32(data,e.cdp+16,newCrc);
+  }
+
+  return data.buffer;
 }
 
-// ── Pure JS ZIP token replacer — no libraries, uses native browser APIs ──────
+function crc32js(data){
+  var crc=0xFFFFFFFF, t=getCrcTable();
+  for(var i=0;i<data.length;i++) crc=(crc>>>8)^t[(crc^data[i])&255];
+  return(crc^0xFFFFFFFF)>>>0;
+}
+var _crcT=null;
+function getCrcTable(){
+  if(_crcT) return _crcT;
+  _crcT=new Uint32Array(256);
+  for(var i=0;i<256;i++){var c=i;for(var j=0;j<8;j++)c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1);_crcT[i]=c;}
+  return _crcT;
+}
+
+
 async function zipReplaceTokens(arrayBuffer, tokens, xe, xmlTargets){
   var src = new Uint8Array(arrayBuffer);
 
@@ -364,14 +449,11 @@ async function genAgenda(){
   try{
     var buf = await fetchTemplate(TEMPLATES.agenda);
     var teamStr = tr.filter(Boolean).join(", ") || F.con || "Yardi Team";
-    var agTokens = {
-      "{{CLIENT_NAME}}":    cl(),
-      "{{CONSULTANT_NAME}}":teamStr,
-      "{{BPR_FROM}}":       getBprFrom(),
-      "{{BPR_UNTIL}}":      getBprUntil()
-    };
-    var rowsXml = buildAgendaRowsXml();
-    var processed = await agendaWithRows(buf, agTokens, rowsXml);
+    // Set agenda-specific tokens
+    F.bf = F.bf || getBprFrom();
+    F.bu = F.bu || getBprUntil();
+    var extraTokens = {sessionDate: getBprFrom(), workshopOwner: teamStr};
+    var processed = await processDocxSmart(buf, cl(), teamStr, tdShort(), extraTokens);
     dlFile(processed,"BPR_Agenda_"+cl().replace(/\s+/g,"_")+".docx","application/vnd.openxmlformats-officedocument.wordprocessingml.document");
     done.add(2);
   }catch(e){alert("Error generating agenda: "+e.message);}
