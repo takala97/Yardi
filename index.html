@@ -96,12 +96,13 @@ var GITHUB_REPO   = "Yardi";                // your repository name
 var GITHUB_BRANCH = "main";
 // Template file names exactly as stored in your GitHub repo
 var TEMPLATES = {
-  vc:  "01-_Business_Process_Requirement_-_Vendor_Cafe.docx",
-  p2p: "02-_Business_Process_Requirement_-_Procure_to_Pay.docx",
-  fa:  "03-._Business_Process_Requirement_-_FA.docx",
-  wo:  "04-._Business_Process_Requirement_-_Work_Orders.docx",
-  fm:  "05-_Business_Process_Requirement_-_Inspection_and_PPM.docx",
-  rfi: "RFI_Collection_Sheet.xlsx"
+  vc:     "01-_Business_Process_Requirement_-_Vendor_Cafe.docx.docx",
+  p2p:    "02-_Business_Process_Requirement_-_Procure_to_Pay.docx.docx",
+  fa:     "03-._Business_Process_Requirement_-_FA.docx.docx",
+  wo:     "04-._Business_Process_Requirement_-_Work_Orders.docx.docx",
+  fm:     "05-_Business_Process_Requirement_-_Inspection_and_PPM.docx.docx",
+  rfi:    "RFI_Collection_Sheet.xlsx",
+  agenda: "BPR_Agenda_Template.docx"
 };
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -112,6 +113,10 @@ var TN={vc:"Vendor Cafe",p2p:"Procure to Pay",fa:"Fixed Assets",wo:"Work Orders"
 var M2R={vc:["Vendor Café"],p2p:["P2P","P2P Services"],fa:["Fixed Assets"],wo:["Facility Manager"],fm:["Facility Manager"]};
 
 var step=0,done=new Set(),loading={};
+var moduleSessions={};
+function setMS(id,key,val){if(!moduleSessions[id])moduleSessions[id]={};moduleSessions[id][key]=val;}
+var moduleSessions={};
+function setMS(id,key,val){if(!moduleSessions[id])moduleSessions[id]={};moduleSessions[id][key]=val;}
 var am=new Set(["vc","p2p","fa","wo","fm"]),adb=new Set(DBS),bt="vc",tr=["",""];
 var F={name:"",pin:"",tz:"",sdb:"",lw:"",tw:"",con:"",sm:"Yes",pi:"",to:"Nereah.Abwao@Yardi.Com",cc:"",cn:"",bf:"",bu:"",st:"10:00 AM",sd:"3",fo:"",dl:"",rn:""};
 
@@ -236,88 +241,133 @@ async function processDocxSmart(arrayBuffer, clientName, consultant, dateStr){
 async function genAgenda(){
   loading.agenda=true; re();
   try{
-    // Use a clean DOCX approach for agenda — fetch VC template as base structure
-    var buf = await fetchTemplate(TEMPLATES.vc);
+    var buf = await fetchTemplate(TEMPLATES.agenda);
     var zip = await JSZip.loadAsync(buf);
-
-    // Build agenda XML content and replace document body
-    var agendaXml = buildAgendaXml();
     var docXml = await zip.files["word/document.xml"].async("string");
 
-    // Replace body content with agenda
-    docXml = docXml.replace(/<w:body>[\s\S]*<\/w:body>/, "<w:body>"+agendaXml+"</w:body>");
+    // Replace header tokens
+    function xe(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+    var teamStr = tr.filter(Boolean).join(", ") || F.con || "Yardi Team";
+    var tokens = {"{{CLIENT_NAME}}":cl(),"{{CONSULTANT_NAME}}":teamStr,"{{BPR_FROM}}":getBprFrom(),"{{BPR_UNTIL}}":getBprUntil()};
+    for(var tok in tokens){ docXml = docXml.split(tok).join(xe(tokens[tok])); }
+
+    // Replace all data rows in the table (keep only header row, inject new rows)
+    var rowsXml = buildAgendaRowsXml();
+    // The header row has tblHeader marker — replace everything after it until </w:tbl>
+    docXml = docXml.replace(/(<w:trPr>\s*<w:cantSplit\/>\s*<w:tblHeader\/>[\s\S]*?<\/w:tr>)([\s\S]*)(<\/w:tbl>)/,
+      function(m,hdr,_old,close){ return hdr + rowsXml + close; });
 
     zip.file("word/document.xml", docXml);
-    var processed = await zip.generateAsync({type:"arraybuffer", compression:"DEFLATE"});
-    var safe = cl().replace(/\s+/g,"_");
-    dlFile(processed, "BPR_Agenda_"+safe+".docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
-    done.add(3);
-  }catch(e){alert("Error: "+e.message);}
+    var processed = await zip.generateAsync({type:"arraybuffer",compression:"DEFLATE"});
+    dlFile(processed,"BPR_Agenda_"+cl().replace(/\s+/g,"_")+".docx","application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+    done.add(2);
+  }catch(e){alert("Error generating agenda: "+e.message);}
   loading.agenda=false; re();
 }
 
-function wxText(text, bold, color, size){
-  size = size||20;
-  var rpr = "<w:rPr>";
-  if(bold) rpr += "<w:b/>";
-  if(color) rpr += "<w:color w:val=\""+color+"\"/>";
-  rpr += "<w:sz w:val=\""+size+"\"/><w:szCs w:val=\""+size+"\"/><w:rFonts w:ascii=\"Arial\" w:hAnsi=\"Arial\"/>";
-  rpr += "</w:rPr>";
-  return "<w:r>"+rpr+"<w:t xml:space=\"preserve\">"+xmlEsc(text)+"</w:t></w:r>";
+// ── Date helpers ──────────────────────────────────────────────────────────────
+function fmtTime24to12(t){
+  try{var p=t.split(":");var h=parseInt(p[0]),m=p[1]||"00",ap=h>=12?"PM":"AM";var h12=h>12?h-12:(h===0?12:h);return h12+":"+m+" "+ap;}catch(e){return t;}
 }
-function xmlEsc(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
-function wxPara(runs, align){
-  align = align||"left";
-  return "<w:p><w:pPr><w:jc w:val=\""+align+"\"/><w:spacing w:before=\"80\" w:after=\"80\"/></w:pPr>"+runs+"</w:p>";
+function nextWorkDay(d){
+  var r=new Date(d);
+  while(r.getDay()===0||r.getDay()===6){r.setDate(r.getDate()+1);}
+  return r;
 }
-function wxHdrCell(text, width){
-  return "<w:tc><w:tcPr><w:tcW w:w=\""+width+"\" w:type=\"dxa\"/><w:shd w:val=\"clear\" w:fill=\"185FA5\"/><w:tcMar><w:top w:w=\"80\" w:type=\"dxa\"/><w:bottom w:w=\"80\" w:type=\"dxa\"/><w:left w:w=\"120\" w:type=\"dxa\"/><w:right w:w=\"120\" w:type=\"dxa\"/></w:tcMar></w:tcPr><w:p><w:pPr><w:jc w:val=\"center\"/></w:pPr>"+wxText(text,true,"FFFFFF",18)+"</w:p></w:tc>";
+function addWorkDays(startISO,n){
+  var days=[],d=nextWorkDay(new Date(startISO));
+  for(var i=0;i<n;i++){
+    if(i>0){d.setDate(d.getDate()+1);d=nextWorkDay(d);}
+    days.push(new Date(d));
+  }
+  return days;
 }
-function wxDataCell(text, width, shade){
-  shade = shade||"FFFFFF";
-  return "<w:tc><w:tcPr><w:tcW w:w=\""+width+"\" w:type=\"dxa\"/><w:shd w:val=\"clear\" w:fill=\""+shade+"\"/><w:tcMar><w:top w:w=\"80\" w:type=\"dxa\"/><w:bottom w:w=\"80\" w:type=\"dxa\"/><w:left w:w=\"120\" w:type=\"dxa\"/><w:right w:w=\"120\" w:type=\"dxa\"/></w:tcMar></w:tcPr><w:p>"+wxText(text,false,"2C2C2A",18)+"</w:p></w:tc>";
+function fmtDate(d){return d.toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"});}
+function fmtDay(d){return d.toLocaleDateString("en-GB",{weekday:"long"});}
+function getBprFrom(){
+  var e=null;
+  sm().forEach(function(m){var ms=moduleSessions[m.id];if(ms&&ms.startDate){var d=new Date(ms.startDate);if(!e||d<e)e=d;}});
+  return e?fmtDate(e):"TBD";
+}
+function getBprUntil(){
+  var l=null;
+  sm().forEach(function(m){var ms=moduleSessions[m.id];if(ms&&ms.startDate&&ms.days){var days=addWorkDays(ms.startDate,parseInt(ms.days)||1);var last=days[days.length-1];if(!l||last>l)l=last;}});
+  return l?fmtDate(l):"TBD";
 }
 
-function buildAgendaXml(){
-  var c=cl(), co=F.con||"Yardi Consultant", t=td(), mods=sm();
-  var team=tr.filter(Boolean).join(", ")||co;
-  var sd=F.bf?new Date(F.bf):null;
-  var dn=1;
-  function dayL(n){var l="Day "+n;if(sd){var dd=new Date(sd);dd.setDate(dd.getDate()+n-1);l+=" – "+dd.toLocaleDateString("en-GB",{weekday:"short",day:"2-digit",month:"short",year:"numeric"});}return l;}
+// ── Build agenda table rows XML ───────────────────────────────────────────────
+function buildAgendaRowsXml(){
+  function xe(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+  var rPr='<w:rPr><w:rFonts w:asciiTheme="minorHAnsi" w:hAnsiTheme="minorHAnsi" w:cstheme="minorHAnsi"/><w:sz w:val="22"/><w:szCs w:val="22"/></w:rPr>';
+  var rPrBold='<w:rPr><w:rFonts w:asciiTheme="minorHAnsi" w:hAnsiTheme="minorHAnsi" w:cstheme="minorHAnsi"/><w:b/><w:bCs/><w:sz w:val="22"/><w:szCs w:val="22"/><w:u w:val="single"/></w:rPr>';
+  function pC(txt,rp){return'<w:p><w:pPr><w:spacing w:before="60" w:after="60"/><w:jc w:val="center"/><w:rPr><w:rFonts w:asciiTheme="minorHAnsi" w:hAnsiTheme="minorHAnsi" w:cstheme="minorHAnsi"/><w:sz w:val="22"/><w:szCs w:val="22"/></w:rPr></w:p><w:p><w:pPr><w:spacing w:before="60" w:after="60"/><w:jc w:val="center"/></w:pPr><w:r>'+rp+'<w:t xml:space="preserve">'+xe(txt)+'</w:t></w:r></w:p>';}
+  function pL(txt,rp){return'<w:p><w:pPr><w:spacing w:before="60" w:after="60"/></w:pPr><w:r>'+rp+'<w:t xml:space="preserve">'+xe(txt)+'</w:t></w:r></w:p>';}
+  function pLi(txt,numId){return'<w:p><w:pPr><w:pStyle w:val="ListParagraph"/><w:numPr><w:ilvl w:val="0"/><w:numId w:val="'+numId+'"/></w:numPr><w:spacing w:before="60" w:after="60"/><w:ind w:left="455"/><w:rPr><w:rFonts w:asciiTheme="minorHAnsi" w:hAnsiTheme="minorHAnsi"/><w:sz w:val="22"/><w:szCs w:val="22"/></w:rPr><w:r><w:rPr><w:rFonts w:asciiTheme="minorHAnsi" w:hAnsiTheme="minorHAnsi"/><w:sz w:val="22"/><w:szCs w:val="22"/></w:rPr><w:t>'+xe(txt)+'</w:t></w:r></w:p>';}
+  function tc(w,inner){return'<w:tc><w:tcPr><w:tcW w:w="'+w+'" w:type="dxa"/></w:tcPr>'+inner+'</w:tc>';}
 
-  var sessions=[];
-  sessions.push({day:dayL(dn++),time:F.st+" – "+addH(F.st,parseInt(F.sd)||3),hrs:F.sd+"h",topics:"Project Kickoff, Scope Walkthrough, Team Introductions, Project Plan Review",att:"All Stakeholders, Project Manager"});
-  var ms={vc:[["Vendor Master, Vendor Markets, Categories, Approval DOA, Portal Configurations","Procurement Manager, Finance Team"]],p2p:[["PR/PO Process, GRN, Invoice Management, Approval Workflows","Finance Manager, AP Accountant, Procurement"],["Payment Processing, Petty Cash, Service Contracts, Credit Notes","Finance Manager, AP Accountant"]],fa:[["Asset Groups & Types, Depreciation Methods, Asset Creation Workflows","Finance Manager, FM Manager"]],wo:[["Maintenance Models, WO Lifecycle, Team Structure, WO Statuses & Priorities","FM Manager, CAFM Planner, Supervisors"],["WO Categories, SLA/KPI, Auto Assignment, WO Configuration Points","FM Manager, CAFM Planner"]],fm:[["Inspection Types, Inspection Process, Templates Setup","FM Manager, FM Engineer, CAFM Planner"],["PPM Process, Task Groups, PPM Frequencies, Service Contract PPMs","FM Manager, AMC Vendors"]]};
-  mods.forEach(function(m){(ms[m.id]||[]).forEach(function(s){sessions.push({day:dayL(dn++),time:F.st+" – "+addH(F.st,parseInt(F.sd)||3),hrs:F.sd+"h",topics:s[0],att:s[1]});});});
-  sessions.push({day:dayL(dn),time:F.st+" – "+addH(F.st,parseInt(F.sd)||3),hrs:F.sd+"h",topics:"Open Items Review, Configuration Decisions, Sign-Off, Next Steps",att:"All Stakeholders, Project Manager"});
+  var TOPICS={
+    vc: {title:"Vendor Cafe",items:["Vendor Markets & Categories","Vendor Approval DOA & Workflows","Vendor Portal Configuration","Vendor Cafe Email Templates","EFT Format & Payment Methods","BPR & RFI Finalization"]},
+    p2p:{title:"Procure to Pay",items:["Purchase Requisition & PO Process","DOA & Approval Workflows","GRN Process","Invoice Management","Payment Processing","Vendor Advances & Petty Cash","Service Contracts (AMC)","BPR & RFI Finalization"]},
+    fa: {title:"Fixed Asset Manager",items:["Asset Groups & Types","Depreciation Methods & Conventions","Asset Creation Workflows","Asset Lifecycle Transactions","Asset Warranty & Barcode","BPR & RFI Finalization"]},
+    wo: {title:"Work Orders",items:["Maintenance Business Models","Work Order Lifecycle","Team Structure & Roles","WO Categories, Priorities & SLA","WO Financials & Approvals","WO Mobile App","BPR & RFI Finalization"]},
+    fm: {title:"Inspection & PPM",items:["Inspection Types & Templates","Inspection Creation & Scheduling","Inspection Execution (Mobile App)","PPM Process & Equipment Setup","Planned Maintenance Scheduling","BPR & RFI Finalization"]},
+  };
 
-  // Column widths for landscape (15840 - 2160 margins = 13680)
-  var cw=[2400,1800,700,5280,3500];
   var xml="";
+  var numId=50; // start at 50 to avoid conflicts with template numbering
 
-  // Title
-  xml+=wxPara(wxText("BPR SESSION AGENDA",true,"185FA5",32),"center");
-  xml+=wxPara(wxText(c+"  |  "+(F.bf||"TBD")+" to "+(F.bu||"TBD"),true,"2C2C2A",24),"center");
-  xml+=wxPara(wxText("Prepared by: "+co+"  |  "+t,false,"5F5E5A",18),"center");
-  xml+=wxPara(wxText(""),"left");
-  xml+=wxPara(wxText("Yardi Team: "+team,true,"2C2C2A",20),"left");
-  xml+=wxPara(wxText("Modules in Scope: "+mods.map(function(m){return m.name;}).join(", "),false,"5F5E5A",18),"left");
-  xml+=wxPara(wxText(""),"left");
+  sm().forEach(function(m){
+    var ms=moduleSessions[m.id]||{};
+    var nDays=parseInt(ms.days)||1;
+    var tf=ms.timeFrom?fmtTime24to12(ms.timeFrom):"08:00 AM";
+    var tt=ms.timeTo?fmtTime24to12(ms.timeTo):"03:00 PM";
+    var timeSlot=tf+" \u2013 "+tt;
+    var atts=(ms.attendees||"").split("\n").map(function(a){return a.trim();}).filter(Boolean);
+    var days=ms.startDate?addWorkDays(ms.startDate,nDays):[];
+    var mod=TOPICS[m.id]||{title:m.name,items:[]};
+    var thisNumId=numId++;
+    var attNumId=numId++;
 
-  // Table
-  xml+="<w:tbl><w:tblPr><w:tblW w:w=\"13680\" w:type=\"dxa\"/><w:tblBorders><w:insideH w:val=\"single\" w:sz=\"4\" w:color=\"CCCCCC\"/><w:insideV w:val=\"single\" w:sz=\"4\" w:color=\"CCCCCC\"/></w:tblBorders></w:tblPr><w:tblGrid><w:gridCol w:w=\""+cw[0]+"\"/><w:gridCol w:w=\""+cw[1]+"\"/><w:gridCol w:w=\""+cw[2]+"\"/><w:gridCol w:w=\""+cw[3]+"\"/><w:gridCol w:w=\""+cw[4]+"\"/></w:tblGrid>";
-  // Header row
-  xml+="<w:tr><w:trPr><w:tblHeader/></w:trPr>"+wxHdrCell("Day & Date",cw[0])+wxHdrCell("Time",cw[1])+wxHdrCell("Hrs",cw[2])+wxHdrCell("Business Topics",cw[3])+wxHdrCell("Suggested Attendees",cw[4])+"</w:tr>";
-  // Data rows
-  sessions.forEach(function(s,i){
-    var shade=i%2===1?"F5F5F5":"FFFFFF";
-    xml+="<w:tr>"+wxDataCell(s.day,cw[0],shade)+wxDataCell(s.time,cw[1],shade)+wxDataCell(s.hrs,cw[2],shade)+wxDataCell(s.topics,cw[3],shade)+wxDataCell(s.att,cw[4],shade)+"</w:tr>";
+    // Build topics XML
+    var topicsXml=pL(mod.title,rPrBold);
+    mod.items.forEach(function(item){
+      topicsXml+=pLi(item,thisNumId);
+    });
+
+    // Build attendees XML
+    var attXml="";
+    if(atts.length>0){
+      atts.forEach(function(a){attXml+=pLi(a,attNumId);});
+    } else {
+      attXml=pL("To be confirmed",rPr);
+    }
+
+    if(days.length===0){
+      // No dates — single row TBD
+      xml+='<w:tr><w:trPr><w:cantSplit/></w:trPr>'
+        +tc("1404",pC("TBD",rPr)+pC(m.name,rPr))
+        +tc("1560",pC(timeSlot,rPr))
+        +tc("5528",topicsXml)
+        +tc("1985",attXml)
+        +'</w:tr>';
+    } else {
+      days.forEach(function(day,di){
+        // Topics and attendees only on first day row
+        var tpXml=di===0?topicsXml:pL("(continued)",rPr);
+        var aXml=di===0?attXml:pL("",rPr);
+        xml+='<w:tr><w:trPr><w:cantSplit/></w:trPr>'
+          +tc("1404",pC(fmtDate(day),rPr)+pC(fmtDay(day),rPr))
+          +tc("1560",pC(timeSlot,rPr))
+          +tc("5528",tpXml)
+          +tc("1985",aXml)
+          +'</w:tr>';
+      });
+    }
   });
-  xml+="</w:tbl>";
-  xml+=wxPara(wxText(""),"left");
-  xml+="<w:sectPr><w:pgSz w:w=\"15840\" w:h=\"12240\" w:orient=\"landscape\"/><w:pgMar w:top=\"1080\" w:right=\"1080\" w:bottom=\"1080\" w:left=\"1080\"/></w:sectPr>";
+
   return xml;
 }
+
 
 // ── Generate RFI from real template ──────────────────────────────────────────
 async function genRfi(){
@@ -497,10 +547,30 @@ function p2(){
 }
 
 function p3(){
-  var rH=tr.map(function(r,i){return'<div class="tr"><input value="'+esc(r)+'" oninput="tr['+i+']=this.value" placeholder="Name — Role"><button class="rm" onclick="rt('+i+')">✕</button></div>';}).join("");
-  return'<div><div class="pt">BPR session agenda</div><div class="ps">Downloads a landscape Word document with your full session schedule.</div>'
-    +'<div class="card"><div class="ct">Session schedule</div><div class="g2">'+fl("Start date","bf","","date")+fl("End date","bu","","date")+fl("Daily start time","st","10:00 AM")+fl("Hours per session","sd","3")+'</div></div>'
-    +'<div class="card"><div class="ct">Yardi team members</div>'+rH+'<button class="al" onclick="at()">+ Add member</button></div>'
+  var modH=sm().map(function(m){
+    var ms=moduleSessions[m.id]||{days:"1",timeFrom:"08:00",timeTo:"15:00",startDate:"",attendees:""};
+    var mid=m.id;
+    return'<div class="card" style="margin-bottom:10px">'
+      +'<div class="ct" style="color:#185FA5">'+esc(m.name)+'</div>'
+      +'<div class="g2">'
+      +'<div><label class="lbl">Session start date *</label>'
+      +'<input type="date" value="'+esc(ms.startDate||"")+'" oninput="setMS(this.dataset.mid,\'startDate\',this.value)" data-mid="'+mid+'"></div>'
+      +'<div><label class="lbl">Number of days</label>'
+      +'<input type="number" min="1" max="10" value="'+esc(ms.days||"1")+'" oninput="setMS(this.dataset.mid,\'days\',this.value)" data-mid="'+mid+'"></div>'
+      +'<div><label class="lbl">Time from</label>'
+      +'<input type="time" value="'+esc(ms.timeFrom||"08:00")+'" oninput="setMS(this.dataset.mid,\'timeFrom\',this.value)" data-mid="'+mid+'"></div>'
+      +'<div><label class="lbl">Time to</label>'
+      +'<input type="time" value="'+esc(ms.timeTo||"15:00")+'" oninput="setMS(this.dataset.mid,\'timeTo\',this.value)" data-mid="'+mid+'"></div>'
+      +'<div class="full"><label class="lbl">Suggested attendees (one per line)</label>'
+      +'<textarea rows="3" oninput="setMS(this.dataset.mid,\'attendees\',this.value)" data-mid="'+mid+'" placeholder="e.g. Procurement Manager&#10;Finance Team&#10;IT">'+esc(ms.attendees||"")+'</textarea>'
+      +'</div></div></div>';
+  }).join("");
+  var teamH=tr.map(function(r,i){return'<div class="tr"><input value="'+esc(r)+'" oninput="tr['+i+']=this.value" placeholder="Name — Role"><button class="rm" onclick="rt('+i+')">✕</button></div>';}).join("");
+  return'<div><div class="pt">BPR session agenda</div>'
+    +'<div class="ps">Set dates, times, and attendees per module. The agenda is generated automatically.</div>'
+    +'<div class="card"><div class="ct">Yardi team members</div>'+teamH+'<button class="al" onclick="at()">+ Add member</button></div>'
+    +'<div class="info">📅 Configure each module below. Days are auto-calculated and weekends are skipped.</div>'
+    +modH
     +ldBtn("agenda","Agenda .docx","genAgenda()")
     +'<div class="brow"><button class="btn bs" onclick="go(2)">← Back</button><button class="btn bp" onclick="go(4)">Continue →</button></div></div>';
 }
