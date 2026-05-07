@@ -269,10 +269,9 @@ async function zipReplaceTokens(arrayBuffer, tokens, xe, xmlTargets){
     var xml=new TextDecoder("utf-8").decode(rawBytes);
     for(var tok in tokens){xml=xml.split(tok).join(xe(tokens[tok]));}
     rawBytes=new TextEncoder().encode(xml);
-    // Recompress
-    var recomp=await deflateRaw(rawBytes);
+    // STORE — no recompression, avoids all corruption issues
     var newCrc=calcCrc32(rawBytes);
-    replacements[e.fn]={data:recomp,crc:newCrc,cs:recomp.length,us:rawBytes.length};
+    replacements[e.fn]={data:rawBytes,crc:newCrc,cs:rawBytes.length,us:rawBytes.length};
   }
 
   // Rebuild ZIP
@@ -304,6 +303,7 @@ async function zipReplaceTokens(arrayBuffer, tokens, xe, xmlTargets){
     if(replacements[e.fn]){
       var r=replacements[e.fn];
       w32(cdEntry,16,r.crc); w32(cdEntry,20,r.cs); w32(cdEntry,24,r.us);
+      cdEntry[10]=0; cdEntry[11]=0; // STORE
     }
     w32(cdEntry,42,offsets[ei]);
     parts.push(cdEntry); writeOff+=cdEntry.length;
@@ -420,9 +420,10 @@ async function agendaWithRows(arrayBuffer, tokens, rowsXml){
         function(m,hdr,_old,close){return hdr+rowsXml+close;});
     }
     rawBytes=new TextEncoder().encode(xml);
-    var recomp=await deflateRaw(rawBytes);
+    rawBytes=new TextEncoder().encode(xml);
+    // STORE — no recompression
     var newCrc=calcCrc32(rawBytes);
-    replacements[e.fn]={data:recomp,crc:newCrc,cs:recomp.length,us:rawBytes.length};
+    replacements[e.fn]={data:rawBytes,crc:newCrc,cs:rawBytes.length,us:rawBytes.length};
   }
   // Rebuild ZIP
   var parts=[],offsets=[],writeOff=0;
@@ -436,6 +437,7 @@ async function agendaWithRows(arrayBuffer, tokens, rowsXml){
     if(replacements[e.fn]){
       var r=replacements[e.fn];
       fd=r.data; w32(lh,14,r.crc); w32(lh,18,r.cs); w32(lh,22,r.us);
+      lh[8]=0; lh[9]=0; // STORE
     } else { fd=src.slice(ds,ds+e.cs); }
     parts.push(lh); writeOff+=lh.length;
     parts.push(fd); writeOff+=fd.length;
