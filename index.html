@@ -86,6 +86,7 @@ hr.div{border:none;border-top:1px solid #e8e8e8;margin:12px 0}
   </div>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 <script>
@@ -95,11 +96,11 @@ var GITHUB_REPO   = "Yardi";                // your repository name
 var GITHUB_BRANCH = "main";
 // Template file names exactly as stored in your GitHub repo
 var TEMPLATES = {
-  vc:     "01-_Business_Process_Requirement_-_Vendor_Cafe.docx",
-  p2p:    "02-_Business_Process_Requirement_-_Procure_to_Pay.docx",
-  fa:     "03_-_Business_Process_Requirement_-_FA.docx",
-  wo:     "04_-_Business_Process_Requirement_-_Work_Orders.docx",
-  fm:     "05-_Business_Process_Requirement_-_Inspection_and_PPM.docx",
+  vc:     "01-_Business_Process_Requirement_-_Vendor_Cafe.docx.docx",
+  p2p:    "02-_Business_Process_Requirement_-_Procure_to_Pay.docx.docx",
+  fa:     "03-._Business_Process_Requirement_-_FA.docx.docx",
+  wo:     "04-._Business_Process_Requirement_-_Work_Orders.docx.docx",
+  fm:     "05-_Business_Process_Requirement_-_Inspection_and_PPM.docx.docx",
   rfi:    "RFI_Collection_Sheet.xlsx",
   agenda: "BPR_Agenda_Template.docx"
 };
@@ -114,8 +115,12 @@ var M2R={vc:["Vendor Café"],p2p:["P2P","P2P Services"],fa:["Fixed Assets"],wo:[
 var step=0,done=new Set(),loading={};
 var moduleSessions={};
 function setMS(id,key,val){if(!moduleSessions[id])moduleSessions[id]={};moduleSessions[id][key]=val;}
+var agendaRows={};
+function setAR(key,field,val){if(!agendaRows[key])agendaRows[key]={};agendaRows[key][field]=val;}
 var moduleSessions={};
 function setMS(id,key,val){if(!moduleSessions[id])moduleSessions[id]={};moduleSessions[id][key]=val;}
+var agendaRows={};
+function setAR(key,field,val){if(!agendaRows[key])agendaRows[key]={};agendaRows[key][field]=val;}
 var am=new Set(["vc","p2p","fa","wo","fm"]),adb=new Set(DBS),bt="vc",tr=["",""];
 var F={name:"",pin:"",tz:"",sdb:"",lw:"",tw:"",con:"",sm:"Yes",pi:"",to:"Nereah.Abwao@Yardi.Com",cc:"",cn:"",bf:"",bu:"",st:"10:00 AM",sd:"3",fo:"",dl:"",rn:""};
 
@@ -168,7 +173,7 @@ async function processDocx(arrayBuffer, replacements){
     zip.file(fname, content);
   }
 
-  return zip.generate({type:"arraybuffer",compression:"DEFLATE",compressionOptions:{level:6},mimeType:"application/vnd.openxmlformats-officedocument.wordprocessingml.document"});
+  return await zip.generateAsync({type:"arraybuffer", compression:"DEFLATE"});
 }
 
 // ── Download a file ───────────────────────────────────────────────────────────
@@ -189,33 +194,31 @@ async function genBpr(id){
   try{
     var c = cl();
     var buf = await fetchTemplate(TEMPLATES[id]);
-    // Get per-module session details
-    var ms = moduleSessions[id] || {};
-    var sessionDate = ms.startDate ? fmtDate(new Date(ms.startDate)) : tdShort();
-    var workshopOwner = ms.workshopOwner || F.con || "Yardi Consultant";
-    var extraTokens = {
-      sessionDate: sessionDate,
-      workshopOwner: workshopOwner
+    var replacements = {
+      "XX": c,
+      // Version control date/author are also XX in the templates
     };
-    var processed = await processDocxSmart(buf, c, F.con||"Yardi Consultant", tdShort(), extraTokens);
+    // We need smarter replacement for version table
+    // The version table has XX in date col and XX in author col
+    // We'll handle this by doing a more targeted XML edit
+    var processed = await processDocxSmart(buf, c, F.con||"Yardi Consultant", tdShort());
+    // processDocxSmart now handles all {{TOKEN}} replacements automatically
     var safe = c.replace(/\s+/g,"_");
     dlFile(processed, "BPR_"+TN[id].replace(/\s+/g,"_")+"_"+safe+".docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
     done.add(4);
   }catch(e){
-    alert("Error generating BPR: "+e.message);
+    alert("Error: "+e.message);
   }
   loading["bpr_"+id]=false; re();
 }
 
 // Smart DOCX processor — replaces all {{TOKENS}} in template
-async function processDocxSmart(arrayBuffer, clientName, consultant, dateStr, extraTokens){
-  // Token map - values will be padded to exact token length to preserve ZIP structure
-  var tokenMap = {
-    "{{CLIENT_NAME}}":     clientName || "",
-    "{{CONSULTANT_NAME}}": consultant || "",
-    "{{DATE}}":            dateStr || "",
-    "{{SESSION_DATE}}":    (extraTokens && extraTokens.sessionDate)   || dateStr || "",
-    "{{WORKSHOP_OWNER}}":  (extraTokens && extraTokens.workshopOwner) || consultant || "",
+async function processDocxSmart(arrayBuffer, clientName, consultant, dateStr){
+  var zip = await JSZip.loadAsync(arrayBuffer);
+  var tokens = {
+    "{{CLIENT_NAME}}":     clientName,
+    "{{CONSULTANT_NAME}}": consultant,
+    "{{DATE}}":            dateStr,
     "{{CLIENT_PIN}}":      F.pin  || "",
     "{{TIMEZONE}}":        F.tz   || "",
     "{{LIVE_WEBSHARE}}":   F.lw   || "",
@@ -224,429 +227,122 @@ async function processDocxSmart(arrayBuffer, clientName, consultant, dateStr, ex
     "{{BPR_FROM}}":        F.bf   || "",
     "{{BPR_UNTIL}}":       F.bu   || "",
   };
-
-  function xe(s){ return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
-  function r16(b,o){ return b[o]|(b[o+1]<<8); }
-  function r32(b,o){ return((b[o]|(b[o+1]<<8)|(b[o+2]<<16)|(b[o+3]<<24))>>>0); }
-  function w32(b,o,v){ b[o]=v&255;b[o+1]=(v>>8)&255;b[o+2]=(v>>16)&255;b[o+3]=(v>>24)&255; }
-
-  var data = new Uint8Array(arrayBuffer.slice(0));
-
-  // Find EOCD
-  var eocd=-1;
-  for(var i=data.length-22;i>=0;i--){
-    if(data[i]===0x50&&data[i+1]===0x4B&&data[i+2]===0x05&&data[i+3]===0x06){eocd=i;break;}
-  }
-  if(eocd<0) throw new Error("Not a valid ZIP");
-
-  var cdOff=r32(data,eocd+16), cdCnt=r16(data,eocd+10);
-
-  // Parse central directory
-  var entries=[], pos=cdOff;
-  for(var i=0;i<cdCnt;i++){
-    if(r32(data,pos)!==0x02014B50) break;
-    var cm=r16(data,pos+10),cs=r32(data,pos+20),us=r32(data,pos+24);
-    var fnl=r16(data,pos+28),exl=r16(data,pos+30),cml=r16(data,pos+32),lo=r32(data,pos+42);
-    var fn=new TextDecoder().decode(data.slice(pos+46,pos+46+fnl));
-    entries.push({fn:fn,cm:cm,cs:cs,us:us,lo:lo,fnl:fnl,exl:exl,cml:cml,cdp:pos});
-    pos+=46+fnl+exl+cml;
-  }
-
-  // Process STORE (cm=0) XML entries only
-  for(var ei=0;ei<entries.length;ei++){
-    var e=entries[ei];
-    if(e.cm!==0) continue; // skip compressed entries
-    if(!e.fn.endsWith(".xml")&&!e.fn.endsWith(".rels")) continue;
-
-    var lhFnl=r16(data,e.lo+26), lhExl=r16(data,e.lo+28);
-    var ds=e.lo+30+lhFnl+lhExl;
-    var fileBytes=data.slice(ds,ds+e.cs);
-
-    // Check if any token exists in this file
-    var xml=new TextDecoder("utf-8").decode(fileBytes);
-    var changed=false;
-
-    for(var token in tokenMap){
-      if(xml.indexOf(token)===-1) continue;
-      // Pad value to EXACT token length to preserve file size
-      var raw=xe(tokenMap[token]);
-      var padded=raw.length>=token.length
-        ? raw.substring(0,token.length)
-        : raw+(new Array(token.length-raw.length+1).join(" "));
-      // Replace all occurrences
-      while(xml.indexOf(token)!==-1){
-        xml=xml.replace(token,padded);
-      }
-      changed=true;
+  var filesToProcess = ["word/document.xml","word/header1.xml","word/footer1.xml","word/header2.xml","word/footer2.xml"];
+  for(var i=0;i<filesToProcess.length;i++){
+    var fname=filesToProcess[i];
+    if(!zip.files[fname]) continue;
+    var xml = await zip.files[fname].async("string");
+    for(var token in tokens){
+      var safeVal=String(tokens[token]).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+      xml = xml.split(token).join(safeVal);
     }
-
-    if(!changed) continue;
-
-    var newBytes=new TextEncoder().encode(xml);
-    if(newBytes.length!==fileBytes.length){
-      // Length mismatch - skip this file to avoid corruption
-      continue;
-    }
-
-    // Write new bytes into data
-    data.set(newBytes, ds);
-
-    // Update CRC32 in local header (offset lo+14) and CD (offset cdp+16)
-    var newCrc=crc32js(newBytes);
-    w32(data,e.lo+14,newCrc);
-    w32(data,e.cdp+16,newCrc);
+    zip.file(fname, xml);
   }
-
-  return data.buffer;
+  return await zip.generateAsync({type:"arraybuffer",compression:"DEFLATE"});
 }
 
-function crc32js(data){
-  var crc=0xFFFFFFFF, t=getCrcTable();
-  for(var i=0;i<data.length;i++) crc=(crc>>>8)^t[(crc^data[i])&255];
-  return(crc^0xFFFFFFFF)>>>0;
+// ── Generate Agenda from real BPR template (Vendor Cafe as base) ─────────────
+function buildAgendaRowDefs(){
+  var rows=[],mods=sm();
+  var hasVC=mods.some(function(m){return m.id==="vc";}),hasP2P=mods.some(function(m){return m.id==="p2p";}),hasFA=mods.some(function(m){return m.id==="fa";}),hasWO=mods.some(function(m){return m.id==="wo";}),hasFM=mods.some(function(m){return m.id==="fm";});
+  rows.push({key:"kickoff",label:"Introduction & Kickoff",alwaysOn:true,items:"Introduction and Kickoff with the Project Stakeholder and the Team\nProject plan walkthrough\nYardi platform overview",attendees:"All stakeholders\nProcurement\nFacilities\nFinance (AP)\nIT"});
+  if(hasVC)rows.push({key:"vc",label:"Vendor Cafe",items:"Vendor Markets & Categories\nVendor Invitation & Onboarding Process\nVendor Portal Registration\nVendor Profile Creation, Submission & Approval\nVendor Cafe Dashboard\nPurchase Orders in Vendor Cafe\nInvoicing from Vendor Cafe\nVendor SOA\nBPR & RFI Finalization",attendees:"Vendor Management Team\nProcurement\nFinance (AP)\nIT"});
+  if(hasP2P)rows.push({key:"p2p_day1",label:"Procurement",items:"Purchase Requisition: Data Entry, Workflows/DOA\nPurchase Orders: Dashboards, Data Entry, Workflows/DOA, PO Printing\nGRN Process\nPurchase Order Reports\nProcure to Pay App\nBPR & RFI Finalization",attendees:"Procurement\nFinance (AP)\nIT"});
+  if(hasP2P)rows.push({key:"p2p_day2",label:"Accounts Payable",items:"Vendor Invoicing and Workflow\nPayment Process\nVendor Advances\nPetty Cash Management\nPO Accrual\nPrepaid Expenses\nService Contract Management (AMC)\nProcure to Pay App\nBPR & RFI Finalization",attendees:"Finance (AP)\nProcurement / AMC Team\nIT"});
+  if(hasFA)rows.push({key:"fa",label:"Fixed Asset Manager",items:"Asset Groups & Types\nDepreciation Methods & Conventions\nAsset Creation Workflows\nAsset Lifecycle Transactions: Purchase, Transfer, Disposal, Impairment, Revalue\nAsset Warranty & Barcode\nAsset Auto Code configuration\nBPR & RFI Finalization",attendees:"Finance Manager\nFM Manager\nIT"});
+  if(hasWO)rows.push({key:"wo",label:"Facility Management - Work Orders",items:"Reactive Maintenance: Service Request & Work Order\nWork Order Creation Process\nWO Review by Outsourced Partner\nWO Assignment to Technician\nWO Quotation Process\nWO Financials: Payment to Vendor, Charge to Tenant\nInventory Consumption\nWO Mobile App\nWO SLA Tracking\nWO Technician Time Tracking\nWO Analytics\nBPR & RFI Finalization",attendees:"Facility Management\nFinance (AP)\nIT"});
+  if(hasFM)rows.push({key:"fm",label:"Facility Management - Inspection & PPM",items:"Inspection: Introduction & Overview\nInspection Templates\nInspection Creation, Assignment & Scheduling\nInspector Working Hours and Slots\nMobile App Execution\nInspection Finalization & Reporting\nPPM: Introduction & Overview\nEquipment Templates, Creation & Components\nPlanned Maintenance Creation, Post & Schedule\nAuto Work Order Creation for Faults\nReports\nBPR & RFI Finalization",attendees:"Facility Management\nFinance (AP)\nIT"});
+  return rows;
 }
-var _crcT=null;
-function getCrcTable(){
-  if(_crcT) return _crcT;
-  _crcT=new Uint32Array(256);
-  for(var i=0;i<256;i++){var c=i;for(var j=0;j<8;j++)c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1);_crcT[i]=c;}
-  return _crcT;
-}
-
-
-async function zipReplaceTokens(arrayBuffer, tokens, xe, xmlTargets){
-  var src = new Uint8Array(arrayBuffer);
-
-  function r16(b,o){return b[o]|(b[o+1]<<8);}
-  function r32(b,o){return((b[o]|(b[o+1]<<8)|(b[o+2]<<16)|(b[o+3]<<24))>>>0);}
-  function w32(b,o,v){b[o]=v&255;b[o+1]=(v>>8)&255;b[o+2]=(v>>16)&255;b[o+3]=(v>>24)&255;}
-
-  // Find EOCD
-  var eocd=-1;
-  for(var i=src.length-22;i>=0;i--){if(src[i]===0x50&&src[i+1]===0x4B&&src[i+2]===0x05&&src[i+3]===0x06){eocd=i;break;}}
-  if(eocd<0) throw new Error("Invalid ZIP");
-  var cdOff=r32(src,eocd+16), cdCnt=r16(src,eocd+10);
-
-  // Parse central directory
-  var entries=[], pos=cdOff;
-  for(var i=0;i<cdCnt;i++){
-    if(r32(src,pos)!==0x02014B50) break;
-    var cm=r16(src,pos+10),crc=r32(src,pos+16),cs=r32(src,pos+20),us=r32(src,pos+24);
-    var fnl=r16(src,pos+28),exl=r16(src,pos+30),cml=r16(src,pos+32),lo=r32(src,pos+42);
-    var fn=new TextDecoder().decode(src.slice(pos+46,pos+46+fnl));
-    entries.push({fn:fn,cm:cm,crc:crc,cs:cs,us:us,lo:lo,fnl:fnl,exl:exl,cml:cml,cdp:pos});
-    pos+=46+fnl+exl+cml;
-  }
-
-  // Process XML files
-  var replacements={};
-  for(var ei=0;ei<entries.length;ei++){
-    var e=entries[ei];
-    if(!xmlTargets[e.fn]) continue;
-    var lhFnl=r16(src,e.lo+26),lhExl=r16(src,e.lo+28);
-    var ds=e.lo+30+lhFnl+lhExl;
-    var compData=src.slice(ds,ds+e.cs);
-    // Decompress
-    var rawBytes;
-    if(e.cm===8){rawBytes=await inflateRaw(compData);}
-    else{rawBytes=compData;}
-    // Replace tokens
-    var xml=new TextDecoder("utf-8").decode(rawBytes);
-    for(var tok in tokens){xml=xml.split(tok).join(xe(tokens[tok]));}
-    rawBytes=new TextEncoder().encode(xml);
-    // STORE — no recompression, avoids all corruption issues
-    var newCrc=calcCrc32(rawBytes);
-    replacements[e.fn]={data:rawBytes,crc:newCrc,cs:rawBytes.length,us:rawBytes.length};
-  }
-
-  // Rebuild ZIP
-  var parts=[], offsets=[];
-  var writeOff=0;
-  for(var ei=0;ei<entries.length;ei++){
-    var e=entries[ei];
-    var lhFnl=r16(src,e.lo+26),lhExl=r16(src,e.lo+28);
-    var ds=e.lo+30+lhFnl+lhExl;
-    var lh=new Uint8Array(src.slice(e.lo,ds));
-    var fd;
-    offsets.push(writeOff);
-    if(replacements[e.fn]){
-      var r=replacements[e.fn];
-      fd=r.data;
-      w32(lh,14,r.crc); w32(lh,18,r.cs); w32(lh,22,r.us);
-      lh[8]=0; lh[9]=0; // STORE
-    } else {
-      fd=src.slice(ds,ds+e.cs);
-    }
-    parts.push(lh); writeOff+=lh.length;
-    parts.push(fd); writeOff+=fd.length;
-  }
-
-  // New central directory
-  var newCdOff=writeOff;
-  for(var ei=0;ei<entries.length;ei++){
-    var e=entries[ei];
-    var cdEntry=new Uint8Array(src.slice(e.cdp,e.cdp+46+e.fnl+e.exl+e.cml));
-    if(replacements[e.fn]){
-      var r=replacements[e.fn];
-      w32(cdEntry,16,r.crc); w32(cdEntry,20,r.cs); w32(cdEntry,24,r.us);
-      cdEntry[10]=0; cdEntry[11]=0; // STORE
-    }
-    w32(cdEntry,42,offsets[ei]);
-    parts.push(cdEntry); writeOff+=cdEntry.length;
-  }
-
-  // EOCD
-  var newEocd=new Uint8Array(src.slice(eocd,eocd+22));
-  var newCdSize=writeOff-newCdOff;
-  w32(newEocd,12,newCdSize); w32(newEocd,16,newCdOff);
-  parts.push(newEocd);
-
-  // Concatenate
-  var total=parts.reduce(function(s,p){return s+p.length;},0);
-  var out=new Uint8Array(total), off=0;
-  for(var pi=0;pi<parts.length;pi++){out.set(parts[pi],off);off+=parts[pi].length;}
-  return out.buffer;
-}
-
-async function inflateRaw(data){
-  var ds=new DecompressionStream("deflate-raw");
-  var w=ds.writable.getWriter(),r=ds.readable.getReader();
-  w.write(data); w.close();
-  var chunks=[],total=0;
-  while(true){var x=await r.read();if(x.done)break;chunks.push(x.value);total+=x.value.length;}
-  var out=new Uint8Array(total),o=0;
-  for(var c of chunks){out.set(c,o);o+=c.length;}
-  return out;
-}
-
-async function deflateRaw(data){
-  var cs=new CompressionStream("deflate-raw");
-  var w=cs.writable.getWriter(),r=cs.readable.getReader();
-  w.write(data); w.close();
-  var chunks=[],total=0;
-  while(true){var x=await r.read();if(x.done)break;chunks.push(x.value);total+=x.value.length;}
-  var out=new Uint8Array(total),o=0;
-  for(var c of chunks){out.set(c,o);o+=c.length;}
-  return out;
-}
-
-function calcCrc32(data){
-  var crc=0xFFFFFFFF,t=getCrcTable();
-  for(var i=0;i<data.length;i++){crc=(crc>>>8)^t[(crc^data[i])&255];}
-  return(crc^0xFFFFFFFF)>>>0;
-}
-var _crcT=null;
-function getCrcTable(){
-  if(_crcT) return _crcT;
-  _crcT=new Uint32Array(256);
-  for(var i=0;i<256;i++){var c=i;for(var j=0;j<8;j++)c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1);_crcT[i]=c;}
-  return _crcT;
-}
-
-
-async function genAgenda(){
-  loading.agenda=true; re();
-  try{
-    var buf = await fetchTemplate(TEMPLATES.agenda);
-    var teamStr = tr.filter(Boolean).join(", ") || F.con || "Yardi Team";
-    // Set agenda-specific tokens
-    F.bf = F.bf || getBprFrom();
-    F.bu = F.bu || getBprUntil();
-    var extraTokens = {sessionDate: getBprFrom(), workshopOwner: teamStr};
-    var processed = await processDocxSmart(buf, cl(), teamStr, tdShort(), extraTokens);
-    dlFile(processed,"BPR_Agenda_"+cl().replace(/\s+/g,"_")+".docx","application/vnd.openxmlformats-officedocument.wordprocessingml.document");
-    done.add(2);
-  }catch(e){alert("Error generating agenda: "+e.message);}
-  loading.agenda=false; re();
-}
-
-
-async function agendaWithRows(arrayBuffer, tokens, rowsXml){
+function fmtTime12(t){try{var p=t.split(":");var h=parseInt(p[0]),m=p[1]||"00",ap=h>=12?"PM":"AM";var h12=h>12?h-12:(h===0?12:h);return h12+":"+m+" "+ap;}catch(e){return t;}}
+function fmtDateLong(iso){if(!iso)return "TBD";try{var d=new Date(iso+"T00:00:00");return d.toLocaleDateString("en-GB",{weekday:"long",day:"2-digit",month:"short",year:"numeric"});}catch(e){return iso;}}
+function getBprFrom(){var d=Object.values(agendaRows).map(function(r){return r.date;}).filter(Boolean).sort();return d.length?fmtDateLong(d[0]):"TBD";}
+function getBprUntil(){var d=Object.values(agendaRows).map(function(r){return r.date;}).filter(Boolean).sort();return d.length?fmtDateLong(d[d.length-1]):"TBD";}
+function buildAgendaTableXml(){
+  var rows=buildAgendaRowDefs(),xml="";
   function xe(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
-  var src = new Uint8Array(arrayBuffer);
+  var rPr='<w:rPr><w:rFonts w:ascii="Tahoma" w:hAnsi="Tahoma" w:cs="Tahoma"/><w:sz w:val="22"/><w:szCs w:val="22"/></w:rPr>';
+  var rPrB='<w:rPr><w:rFonts w:ascii="Tahoma" w:hAnsi="Tahoma" w:cs="Tahoma"/><w:b/><w:bCs/><w:sz w:val="22"/><w:szCs w:val="22"/></w:rPr>';
+  function para(t,rp,c){return'<w:p><w:pPr><w:spacing w:before="60" w:after="60"/>'+(c?'<w:jc w:val="center"/>':'')+'</w:pPr><w:r>'+rp+'<w:t xml:space="preserve">'+xe(t)+'</w:t></w:r></w:p>';}
+  function blt(t,rp){return'<w:p><w:pPr><w:pStyle w:val="ListParagraph"/><w:numPr><w:ilvl w:val="0"/><w:numId w:val="1"/></w:numPr><w:spacing w:before="40" w:after="40"/></w:pPr><w:r>'+rp+'<w:t xml:space="preserve">'+xe(t)+'</w:t></w:r></w:p>';}
+  function tc(w,inner,shade){return'<w:tc><w:tcPr><w:tcW w:w="'+w+'" w:type="dxa"/>'+(shade?'<w:shd w:val="clear" w:color="auto" w:fill="F2F2F2"/>':'')+'</w:tcPr>'+inner+'</w:tc>';}
+  rows.forEach(function(row,idx){
+    var rs=agendaRows[row.key]||{},shade=idx%2!==0;
+    var dateStr=rs.date?fmtDateLong(rs.date):"TBD";
+    var timeStr=(rs.timeFrom&&rs.timeTo)?(fmtTime12(rs.timeFrom)+" – "+fmtTime12(rs.timeTo)):"08:00 AM – 03:00 PM";
+    var items=((rs.items!=null)?rs.items:row.items).split("\n").map(function(s){return s.trim();}).filter(Boolean);
+    var atts=((rs.attendees!=null)?rs.attendees:row.attendees).split("\n").map(function(s){return s.trim();}).filter(Boolean);
+    var iXml=items.map(function(t,i){return blt(t,i===0?rPrB:rPr);}).join("");
+    var aXml=atts.map(function(a){return para(a,rPr,false);}).join("");
+    xml+='<w:tr>'+tc(1500,para(dateStr,rPr,true),shade)+tc(1500,para(timeStr,rPr,true),shade)+tc(4860,iXml,shade)+tc(1500,aXml,shade)+'</w:tr>';
+  });
+  return xml;
+}
+async function injectAgendaRows(arrayBuffer){
+  var src=new Uint8Array(arrayBuffer);
   function r16(b,o){return b[o]|(b[o+1]<<8);}
   function r32(b,o){return((b[o]|(b[o+1]<<8)|(b[o+2]<<16)|(b[o+3]<<24))>>>0);}
   function w32(b,o,v){b[o]=v&255;b[o+1]=(v>>8)&255;b[o+2]=(v>>16)&255;b[o+3]=(v>>24)&255;}
-
-  // Find EOCD
   var eocd=-1;
   for(var i=src.length-22;i>=0;i--){if(src[i]===0x50&&src[i+1]===0x4B&&src[i+2]===0x05&&src[i+3]===0x06){eocd=i;break;}}
-  if(eocd<0) throw new Error("Invalid ZIP");
-  var cdOff=r32(src,eocd+16), cdCnt=r16(src,eocd+10);
-  var entries=[], pos=cdOff;
+  var cdOff=r32(src,eocd+16),cdCnt=r16(src,eocd+10),pos=cdOff;
+  var entries=[];
   for(var i=0;i<cdCnt;i++){
-    if(r32(src,pos)!==0x02014B50) break;
-    var cm=r16(src,pos+10),crc=r32(src,pos+16),cs=r32(src,pos+20),us=r32(src,pos+24);
-    var fnl=r16(src,pos+28),exl=r16(src,pos+30),cml=r16(src,pos+32),lo=r32(src,pos+42);
-    var fn=new TextDecoder().decode(src.slice(pos+46,pos+46+fnl));
-    entries.push({fn:fn,cm:cm,crc:crc,cs:cs,us:us,lo:lo,fnl:fnl,exl:exl,cml:cml,cdp:pos});
+    if(r32(src,pos)!==0x02014B50)break;
+    var cm=r16(src,pos+10),cs=r32(src,pos+20),lo=r32(src,pos+42);
+    var fnl=r16(src,pos+28),exl=r16(src,pos+30),cml=r16(src,pos+32);
+    var crc=r32(src,pos+16),us=r32(src,pos+24);
+    entries.push({fn:new TextDecoder().decode(src.slice(pos+46,pos+46+fnl)),cm:cm,crc:crc,cs:cs,us:us,lo:lo,fnl:fnl,exl:exl,cml:cml,cdp:pos});
     pos+=46+fnl+exl+cml;
   }
-  var xmlTargets={"word/document.xml":1,"word/header1.xml":1,"word/footer1.xml":1,"word/header2.xml":1,"word/footer2.xml":1};
-  var replacements={};
-  for(var ei=0;ei<entries.length;ei++){
-    var e=entries[ei];
-    if(!xmlTargets[e.fn]) continue;
-    var lhFnl=r16(src,e.lo+26),lhExl=r16(src,e.lo+28);
-    var ds=e.lo+30+lhFnl+lhExl;
-    var compData=src.slice(ds,ds+e.cs);
-    var rawBytes=e.cm===8?await inflateRaw(compData):compData;
-    var xml=new TextDecoder("utf-8").decode(rawBytes);
-    // Replace header tokens
-    for(var tok in tokens){
-      if(tok==="{{AGENDA_ROWS}}") continue;
-      xml=xml.split(tok).join(xe(tokens[tok]));
-    }
-    // Inject agenda rows - replace data rows keeping header row
-    if(e.fn==="word/document.xml"){
-      xml=xml.replace(/(<w:trPr>\s*<w:cantSplit[/]>\s*<w:tblHeader[/]>[\s\S]*?<[/]w:tr>)([\s\S]*)(<[/]w:tbl>)/,
-        function(m,hdr,_old,close){return hdr+rowsXml+close;});
-    }
-    rawBytes=new TextEncoder().encode(xml);
-    rawBytes=new TextEncoder().encode(xml);
-    // STORE — no recompression
-    var newCrc=calcCrc32(rawBytes);
-    replacements[e.fn]={data:rawBytes,crc:newCrc,cs:rawBytes.length,us:rawBytes.length};
-  }
-  // Rebuild ZIP
+  var docE=null;
+  for(var i=0;i<entries.length;i++){if(entries[i].fn==="word/document.xml"){docE=entries[i];break;}}
+  if(!docE)return arrayBuffer;
+  var lhFnl=r16(src,docE.lo+26),lhExl=r16(src,docE.lo+28),ds=docE.lo+30+lhFnl+lhExl;
+  var xml=new TextDecoder("utf-8").decode(src.slice(ds,ds+docE.cs));
+  var rowsXml=buildAgendaTableXml();
+  var newXml=xml.replace(/(<w:trPr>\s*<w:cantSplit[/]>\s*<w:tblHeader[/]>[\s\S]*?<[/]w:tr>)([\s\S]*)(<[/]w:tbl>)/,function(m,h,_,c){return h+rowsXml+c;});
+  var newBytes=new TextEncoder().encode(newXml);
+  var newCrc=crc32js(newBytes);
   var parts=[],offsets=[],writeOff=0;
   for(var ei=0;ei<entries.length;ei++){
     var e=entries[ei];
-    var lhFnl=r16(src,e.lo+26),lhExl=r16(src,e.lo+28);
-    var ds=e.lo+30+lhFnl+lhExl;
-    var lh=new Uint8Array(src.slice(e.lo,ds));
-    var fd;
+    var lhF=r16(src,e.lo+26),lhX=r16(src,e.lo+28),dss=e.lo+30+lhF+lhX;
+    var lh=new Uint8Array(src.slice(e.lo,dss));
     offsets.push(writeOff);
-    if(replacements[e.fn]){
-      var r=replacements[e.fn];
-      fd=r.data; w32(lh,14,r.crc); w32(lh,18,r.cs); w32(lh,22,r.us);
-      lh[8]=0; lh[9]=0; // STORE
-    } else { fd=src.slice(ds,ds+e.cs); }
-    parts.push(lh); writeOff+=lh.length;
-    parts.push(fd); writeOff+=fd.length;
+    var fd;
+    if(e.fn==="word/document.xml"){fd=newBytes;w32(lh,14,newCrc);w32(lh,18,newBytes.length);w32(lh,22,newBytes.length);lh[8]=0;lh[9]=0;}
+    else{fd=src.slice(dss,dss+e.cs);}
+    parts.push(lh);writeOff+=lh.length;parts.push(fd);writeOff+=fd.length;
   }
   var newCdOff=writeOff;
   for(var ei=0;ei<entries.length;ei++){
     var e=entries[ei];
-    var cdE=new Uint8Array(src.slice(e.cdp,e.cdp+46+e.fnl+e.exl+e.cml));
-    if(replacements[e.fn]){var r=replacements[e.fn];w32(cdE,16,r.crc);w32(cdE,20,r.cs);w32(cdE,24,r.us);}
-    w32(cdE,42,offsets[ei]);
-    parts.push(cdE); writeOff+=cdE.length;
+    var cd=new Uint8Array(src.slice(e.cdp,e.cdp+46+e.fnl+e.exl+e.cml));
+    if(e.fn==="word/document.xml"){w32(cd,16,newCrc);w32(cd,20,newBytes.length);w32(cd,24,newBytes.length);cd[10]=0;cd[11]=0;}
+    w32(cd,42,offsets[ei]);parts.push(cd);writeOff+=cd.length;
   }
   var newEocd=new Uint8Array(src.slice(eocd,eocd+22));
-  w32(newEocd,12,writeOff-newCdOff); w32(newEocd,16,newCdOff);
-  parts.push(newEocd);
+  w32(newEocd,12,writeOff-newCdOff);w32(newEocd,16,newCdOff);parts.push(newEocd);
   var total=parts.reduce(function(s,p){return s+p.length;},0);
   var out=new Uint8Array(total),off=0;
   for(var pi=0;pi<parts.length;pi++){out.set(parts[pi],off);off+=parts[pi].length;}
   return out.buffer;
 }
-
-// ── Date helpers ──────────────────────────────────────────────────────────────
-function fmtTime24to12(t){
-  try{var p=t.split(":");var h=parseInt(p[0]),m=p[1]||"00",ap=h>=12?"PM":"AM";var h12=h>12?h-12:(h===0?12:h);return h12+":"+m+" "+ap;}catch(e){return t;}
-}
-function nextWorkDay(d){
-  var r=new Date(d);
-  while(r.getDay()===0||r.getDay()===6){r.setDate(r.getDate()+1);}
-  return r;
-}
-function addWorkDays(startISO,n){
-  var days=[],d=nextWorkDay(new Date(startISO));
-  for(var i=0;i<n;i++){
-    if(i>0){d.setDate(d.getDate()+1);d=nextWorkDay(d);}
-    days.push(new Date(d));
-  }
-  return days;
-}
-function fmtDate(d){return d.toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"});}
-function fmtDay(d){return d.toLocaleDateString("en-GB",{weekday:"long"});}
-function getBprFrom(){
-  var e=null;
-  sm().forEach(function(m){var ms=moduleSessions[m.id];if(ms&&ms.startDate){var d=new Date(ms.startDate);if(!e||d<e)e=d;}});
-  return e?fmtDate(e):"TBD";
-}
-function getBprUntil(){
-  var l=null;
-  sm().forEach(function(m){var ms=moduleSessions[m.id];if(ms&&ms.startDate&&ms.days){var days=addWorkDays(ms.startDate,parseInt(ms.days)||1);var last=days[days.length-1];if(!l||last>l)l=last;}});
-  return l?fmtDate(l):"TBD";
+async function genAgenda(){
+  loading.agenda=true;re();
+  try{
+    var buf=await fetchTemplate(TEMPLATES.agenda);
+    var team=tr.filter(Boolean).join(", ")||F.con||"Yardi Team";
+    F.bf=getBprFrom();F.bu=getBprUntil();
+    var processed=await processDocxSmart(buf,cl(),team,tdShort(),{sessionDate:getBprFrom(),workshopOwner:team});
+    processed=await injectAgendaRows(processed);
+    dlFile(processed,"BPR_Agenda_"+cl().replace(/\s+/g,"_")+".docx","application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+    done.add(2);
+  }catch(e){alert("Error generating agenda: "+e.message);}
+  loading.agenda=false;re();
 }
 
-// ── Build agenda table rows XML ───────────────────────────────────────────────
-function buildAgendaRowsXml(){
-  function xe(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
-  var rPr='<w:rPr><w:rFonts w:asciiTheme="minorHAnsi" w:hAnsiTheme="minorHAnsi" w:cstheme="minorHAnsi"/><w:sz w:val="22"/><w:szCs w:val="22"/></w:rPr>';
-  var rPrBold='<w:rPr><w:rFonts w:asciiTheme="minorHAnsi" w:hAnsiTheme="minorHAnsi" w:cstheme="minorHAnsi"/><w:b/><w:bCs/><w:sz w:val="22"/><w:szCs w:val="22"/><w:u w:val="single"/></w:rPr>';
-  function pC(txt,rp){return'<w:p><w:pPr><w:spacing w:before="60" w:after="60"/><w:jc w:val="center"/><w:rPr><w:rFonts w:asciiTheme="minorHAnsi" w:hAnsiTheme="minorHAnsi" w:cstheme="minorHAnsi"/><w:sz w:val="22"/><w:szCs w:val="22"/></w:rPr></w:p><w:p><w:pPr><w:spacing w:before="60" w:after="60"/><w:jc w:val="center"/></w:pPr><w:r>'+rp+'<w:t xml:space="preserve">'+xe(txt)+'</w:t></w:r></w:p>';}
-  function pL(txt,rp){return'<w:p><w:pPr><w:spacing w:before="60" w:after="60"/></w:pPr><w:r>'+rp+'<w:t xml:space="preserve">'+xe(txt)+'</w:t></w:r></w:p>';}
-  function pLi(txt,numId){return'<w:p><w:pPr><w:pStyle w:val="ListParagraph"/><w:numPr><w:ilvl w:val="0"/><w:numId w:val="'+numId+'"/></w:numPr><w:spacing w:before="60" w:after="60"/><w:ind w:left="455"/><w:rPr><w:rFonts w:asciiTheme="minorHAnsi" w:hAnsiTheme="minorHAnsi"/><w:sz w:val="22"/><w:szCs w:val="22"/></w:rPr><w:r><w:rPr><w:rFonts w:asciiTheme="minorHAnsi" w:hAnsiTheme="minorHAnsi"/><w:sz w:val="22"/><w:szCs w:val="22"/></w:rPr><w:t>'+xe(txt)+'</w:t></w:r></w:p>';}
-  function tc(w,inner){return'<w:tc><w:tcPr><w:tcW w:w="'+w+'" w:type="dxa"/></w:tcPr>'+inner+'</w:tc>';}
-
-  var TOPICS={
-    vc: {title:"Vendor Cafe",items:["Vendor Markets & Categories","Vendor Approval DOA & Workflows","Vendor Portal Configuration","Vendor Cafe Email Templates","EFT Format & Payment Methods","BPR & RFI Finalization"]},
-    p2p:{title:"Procure to Pay",items:["Purchase Requisition & PO Process","DOA & Approval Workflows","GRN Process","Invoice Management","Payment Processing","Vendor Advances & Petty Cash","Service Contracts (AMC)","BPR & RFI Finalization"]},
-    fa: {title:"Fixed Asset Manager",items:["Asset Groups & Types","Depreciation Methods & Conventions","Asset Creation Workflows","Asset Lifecycle Transactions","Asset Warranty & Barcode","BPR & RFI Finalization"]},
-    wo: {title:"Work Orders",items:["Maintenance Business Models","Work Order Lifecycle","Team Structure & Roles","WO Categories, Priorities & SLA","WO Financials & Approvals","WO Mobile App","BPR & RFI Finalization"]},
-    fm: {title:"Inspection & PPM",items:["Inspection Types & Templates","Inspection Creation & Scheduling","Inspection Execution (Mobile App)","PPM Process & Equipment Setup","Planned Maintenance Scheduling","BPR & RFI Finalization"]},
-  };
-
-  var xml="";
-  var numId=50; // start at 50 to avoid conflicts with template numbering
-
-  sm().forEach(function(m){
-    var ms=moduleSessions[m.id]||{};
-    var nDays=parseInt(ms.days)||1;
-    var tf=ms.timeFrom?fmtTime24to12(ms.timeFrom):"08:00 AM";
-    var tt=ms.timeTo?fmtTime24to12(ms.timeTo):"03:00 PM";
-    var timeSlot=tf+" \u2013 "+tt;
-    var atts=(ms.attendees||"").split("\n").map(function(a){return a.trim();}).filter(Boolean);
-    var days=ms.startDate?addWorkDays(ms.startDate,nDays):[];
-    var mod=TOPICS[m.id]||{title:m.name,items:[]};
-    var thisNumId=numId++;
-    var attNumId=numId++;
-
-    // Build topics XML
-    var topicsXml=pL(mod.title,rPrBold);
-    mod.items.forEach(function(item){
-      topicsXml+=pLi(item,thisNumId);
-    });
-
-    // Build attendees XML
-    var attXml="";
-    if(atts.length>0){
-      atts.forEach(function(a){attXml+=pLi(a,attNumId);});
-    } else {
-      attXml=pL("To be confirmed",rPr);
-    }
-
-    if(days.length===0){
-      // No dates — single row TBD
-      xml+='<w:tr><w:trPr><w:cantSplit/></w:trPr>'
-        +tc("1404",pC("TBD",rPr)+pC(m.name,rPr))
-        +tc("1560",pC(timeSlot,rPr))
-        +tc("5528",topicsXml)
-        +tc("1985",attXml)
-        +'</w:tr>';
-    } else {
-      days.forEach(function(day,di){
-        // Topics and attendees only on first day row
-        var tpXml=di===0?topicsXml:pL("(continued)",rPr);
-        var aXml=di===0?attXml:pL("",rPr);
-        xml+='<w:tr><w:trPr><w:cantSplit/></w:trPr>'
-          +tc("1404",pC(fmtDate(day),rPr)+pC(fmtDay(day),rPr))
-          +tc("1560",pC(timeSlot,rPr))
-          +tc("5528",tpXml)
-          +tc("1985",aXml)
-          +'</w:tr>';
-      });
-    }
-  });
-
-  return xml;
-}
-
-
-// ── Generate RFI from real template ──────────────────────────────────────────
 async function genRfi(){
   loading.rfi=true; re();
   try{
@@ -715,10 +411,10 @@ async function genEmail(){
     var buf = await fetchTemplate(TEMPLATES.vc);
     var zip = await JSZip.loadAsync(buf);
     var emailXml = buildEmailXml();
-    var docXml = zip.files["word/document.xml"].asText();
+    var docXml = await zip.files["word/document.xml"].async("string");
     docXml = docXml.replace(/<w:body>[\s\S]*<\/w:body>/, "<w:body>"+emailXml+"</w:body>");
     zip.file("word/document.xml", docXml);
-    var processed = zip.generate({type:"arraybuffer", compression:"DEFLATE", compressionOptions:{level:6}, mimeType:"application/vnd.openxmlformats-officedocument.wordprocessingml.document"});
+    var processed = await zip.generateAsync({type:"arraybuffer", compression:"DEFLATE"});
     var safe = cl().replace(/\s+/g,"_");
     dlFile(processed, "Cloud_Email_"+safe+".docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
     done.add(2);
@@ -824,31 +520,30 @@ function p2(){
 }
 
 function p3(){
-  var modH=sm().map(function(m){
-    var ms=moduleSessions[m.id]||{days:"1",timeFrom:"08:00",timeTo:"15:00",startDate:"",attendees:""};
-    var mid=m.id;
+  var ROWS=buildAgendaRowDefs();
+  ROWS.forEach(function(row){if(!agendaRows[row.key])agendaRows[row.key]={date:"",timeFrom:"08:00",timeTo:"15:00",items:row.items,attendees:row.attendees};});
+  var rowHtml=ROWS.map(function(row){
+    var rs=agendaRows[row.key];
     return'<div class="card" style="margin-bottom:10px">'
-      +'<div class="ct" style="color:#185FA5">'+esc(m.name)+'</div>'
+      +'<div class="ct" style="color:#185FA5;margin-bottom:6px">'+(row.alwaysOn?'<span style="font-size:10px;background:#dbeafe;color:#1e40af;padding:2px 7px;border-radius:20px;margin-right:6px">Always included</span>':'')+esc(row.label)+'</div>'
+      +'<div class="g2" style="margin-bottom:8px">'
+      +'<div><label class="lbl">Date</label><input type="date" value="'+esc(rs.date)+'" data-key="'+row.key+'" data-field="date" oninput="setAR(this.dataset.key,this.dataset.field,this.value)"></div>'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">'
+      +'<div><label class="lbl">Time from</label><input type="time" value="'+esc(rs.timeFrom)+'" data-key="'+row.key+'" data-field="timeFrom" oninput="setAR(this.dataset.key,this.dataset.field,this.value)"></div>'
+      +'<div><label class="lbl">Time to</label><input type="time" value="'+esc(rs.timeTo)+'" data-key="'+row.key+'" data-field="timeTo" oninput="setAR(this.dataset.key,this.dataset.field,this.value)"></div>'
+      +'</div></div>'
       +'<div class="g2">'
-      +'<div><label class="lbl">Session start date *</label>'
-      +'<input type="date" value="'+esc(ms.startDate||"")+'" oninput="setMS(this.dataset.mid,\'startDate\',this.value)" data-mid="'+mid+'"></div>'
-      +'<div><label class="lbl">Number of days</label>'
-      +'<input type="number" min="1" max="10" value="'+esc(ms.days||"1")+'" oninput="setMS(this.dataset.mid,\'days\',this.value)" data-mid="'+mid+'"></div>'
-      +'<div><label class="lbl">Time from</label>'
-      +'<input type="time" value="'+esc(ms.timeFrom||"08:00")+'" oninput="setMS(this.dataset.mid,\'timeFrom\',this.value)" data-mid="'+mid+'"></div>'
-      +'<div><label class="lbl">Time to</label>'
-      +'<input type="time" value="'+esc(ms.timeTo||"15:00")+'" oninput="setMS(this.dataset.mid,\'timeTo\',this.value)" data-mid="'+mid+'"></div>'
-      +'<div class="full"><label class="lbl">Suggested attendees (one per line)</label>'
-      +'<textarea rows="3" oninput="setMS(this.dataset.mid,\'attendees\',this.value)" data-mid="'+mid+'" placeholder="e.g. Procurement Manager&#10;Finance Team&#10;IT">'+esc(ms.attendees||"")+'</textarea>'
-      +'</div></div></div>';
+      +'<div class="full"><label class="lbl">Items of Business <span style="font-weight:400;color:#9ca3af">(one per line)</span></label>'
+      +'<textarea rows="5" style="font-size:11px;line-height:1.6" data-key="'+row.key+'" data-field="items" oninput="setAR(this.dataset.key,this.dataset.field,this.value)">'+esc(rs.items)+'</textarea></div>'
+      +'<div class="full"><label class="lbl">Suggested Attendees <span style="font-weight:400;color:#9ca3af">(one per line)</span></label>'
+      +'<textarea rows="3" style="font-size:11px;line-height:1.6" data-key="'+row.key+'" data-field="attendees" oninput="setAR(this.dataset.key,this.dataset.field,this.value)">'+esc(rs.attendees)+'</textarea></div>'
+      +'</div></div>';
   }).join("");
-  var teamH=tr.map(function(r,i){return'<div class="tr"><input value="'+esc(r)+'" oninput="tr['+i+']=this.value" placeholder="Name — Role"><button class="rm" onclick="rt('+i+')">✕</button></div>';}).join("");
-  return'<div><div class="pt">BPR session agenda</div>'
-    +'<div class="ps">Set dates, times, and attendees per module. The agenda is generated automatically.</div>'
+  var teamH=tr.map(function(r,i){return'<div class="tr"><input value="'+esc(r)+'" oninput="tr['+i+']=this.value" placeholder="Name — Role"><button class="rm" onclick="rt('+i+')">&#x2715;</button></div>';}).join("");
+  return'<div><div class="pt">BPR session agenda</div><div class="ps">Set dates and times per session. Items and attendees are pre-filled — edit as needed.</div>'
     +'<div class="card"><div class="ct">Yardi team members</div>'+teamH+'<button class="al" onclick="at()">+ Add member</button></div>'
-    +'<div class="info">📅 Configure each module below. Days are auto-calculated and weekends are skipped.</div>'
-    +modH
-    +ldBtn("agenda","Agenda .docx","genAgenda()")
+    +'<div class="info">Only selected modules appear below. Each line in Items of Business becomes a bullet point in the document.</div>'
+    +rowHtml+ldBtn("agenda","Agenda .docx","genAgenda()")
     +'<div class="brow"><button class="btn bs" onclick="go(2)">← Back</button><button class="btn bp" onclick="go(4)">Continue →</button></div></div>';
 }
 
@@ -856,14 +551,10 @@ function p4(){
   var tabs=sm().filter(function(m){return TEMPLATES[m.id];});
   var tH=tabs.map(function(m){return'<button class="tb'+(bt===m.id?" on":"")+'" onclick="sbt(\''+m.id+'\')">'+TN[m.id]+'</button>';}).join("");
   var cur=tabs.find(function(m){return m.id===bt;});
-  var ms=moduleSessions[bt]||{};
   var body=cur
     ?'<div class="card"><div class="ct">'+TN[bt]+' BPR <span style="font-size:10px;color:#16a34a;font-weight:400;background:#dcfce7;padding:2px 7px;border-radius:20px;margin-left:4px">📄 from your real template</span></div>'
-     +'<div class="g2">'
-     +'<div><label class="lbl">Session date</label><input type="date" value="'+esc(ms.startDate||"")+'" oninput="setMS(this.dataset.mid,\'startDate\',this.value)" data-mid="'+bt+'"></div>'
-     +'<div><label class="lbl">Workshop owner (consultant)</label><input type="text" value="'+esc(ms.workshopOwner||F.con||"")+'" oninput="setMS(this.dataset.mid,\'workshopOwner\',this.value)" data-mid="'+bt+'" placeholder="e.g. Anas Takala"></div>'
-     +'</div><div style="margin-top:10px">'
-     +ldBtn("bpr_"+bt,TN[bt]+" .docx","genBpr('"+bt+"')")+"</div></div>"
+     +'<div class="info">Your template file will be fetched from GitHub, all XX placeholders replaced with "'+esc(cl())+'", and the completed document downloaded directly.</div>'
+     +ldBtn("bpr_"+bt,TN[bt]+" .docx","genBpr('"+bt+"')")+"</div>"
     :'<div class="info">No modules selected. Go back to Step 2.</div>';
   return'<div><div class="pt">BPR documents</div>'
     +'<div class="ps">Each document is your real uploaded template with client data filled in — not generated from scratch.</div>'
