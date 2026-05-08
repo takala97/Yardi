@@ -278,6 +278,18 @@ function buildAgendaTableXml(){
   });
   return xml;
 }
+function crc32js(data){
+  var crc=0xFFFFFFFF,t=crcTable();
+  for(var i=0;i<data.length;i++) crc=(crc>>>8)^t[(crc^data[i])&255];
+  return(crc^0xFFFFFFFF)>>>0;
+}
+var _crcT=null;
+function crcTable(){
+  if(_crcT) return _crcT;
+  _crcT=new Uint32Array(256);
+  for(var i=0;i<256;i++){var c=i;for(var j=0;j<8;j++)c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1);_crcT[i]=c;}
+  return _crcT;
+}
 async function injectAgendaRows(arrayBuffer){
   var src=new Uint8Array(arrayBuffer);
   function r16(b,o){return b[o]|(b[o+1]<<8);}
