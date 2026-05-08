@@ -242,113 +242,14 @@ async function processDocxSmart(arrayBuffer, clientName, consultant, dateStr){
 }
 
 // ── Generate Agenda from real BPR template (Vendor Cafe as base) ─────────────
-function buildAgendaRowDefs(){
-  var rows=[],mods=sm();
-  var hasVC=mods.some(function(m){return m.id==="vc";}),hasP2P=mods.some(function(m){return m.id==="p2p";}),hasFA=mods.some(function(m){return m.id==="fa";}),hasWO=mods.some(function(m){return m.id==="wo";}),hasFM=mods.some(function(m){return m.id==="fm";});
-  rows.push({key:"kickoff",label:"Introduction & Kickoff",alwaysOn:true,items:"Introduction and Kickoff with the Project Stakeholder and the Team\nProject plan walkthrough\nYardi platform overview",attendees:"All stakeholders\nProcurement\nFacilities\nFinance (AP)\nIT"});
-  if(hasVC)rows.push({key:"vc",label:"Vendor Cafe",items:"Vendor Markets & Categories\nVendor Invitation & Onboarding Process\nVendor Portal Registration\nVendor Profile Creation, Submission & Approval\nVendor Cafe Dashboard\nPurchase Orders in Vendor Cafe\nInvoicing from Vendor Cafe\nVendor SOA\nBPR & RFI Finalization",attendees:"Vendor Management Team\nProcurement\nFinance (AP)\nIT"});
-  if(hasP2P)rows.push({key:"p2p_day1",label:"Procurement",items:"Purchase Requisition: Data Entry, Workflows/DOA\nPurchase Orders: Dashboards, Data Entry, Workflows/DOA, PO Printing\nGRN Process\nPurchase Order Reports\nProcure to Pay App\nBPR & RFI Finalization",attendees:"Procurement\nFinance (AP)\nIT"});
-  if(hasP2P)rows.push({key:"p2p_day2",label:"Accounts Payable",items:"Vendor Invoicing and Workflow\nPayment Process\nVendor Advances\nPetty Cash Management\nPO Accrual\nPrepaid Expenses\nService Contract Management (AMC)\nProcure to Pay App\nBPR & RFI Finalization",attendees:"Finance (AP)\nProcurement / AMC Team\nIT"});
-  if(hasFA)rows.push({key:"fa",label:"Fixed Asset Manager",items:"Asset Groups & Types\nDepreciation Methods & Conventions\nAsset Creation Workflows\nAsset Lifecycle Transactions: Purchase, Transfer, Disposal, Impairment, Revalue\nAsset Warranty & Barcode\nAsset Auto Code configuration\nBPR & RFI Finalization",attendees:"Finance Manager\nFM Manager\nIT"});
-  if(hasWO)rows.push({key:"wo",label:"Facility Management - Work Orders",items:"Reactive Maintenance: Service Request & Work Order\nWork Order Creation Process\nWO Review by Outsourced Partner\nWO Assignment to Technician\nWO Quotation Process\nWO Financials: Payment to Vendor, Charge to Tenant\nInventory Consumption\nWO Mobile App\nWO SLA Tracking\nWO Technician Time Tracking\nWO Analytics\nBPR & RFI Finalization",attendees:"Facility Management\nFinance (AP)\nIT"});
-  if(hasFM)rows.push({key:"fm",label:"Facility Management - Inspection & PPM",items:"Inspection: Introduction & Overview\nInspection Templates\nInspection Creation, Assignment & Scheduling\nInspector Working Hours and Slots\nMobile App Execution\nInspection Finalization & Reporting\nPPM: Introduction & Overview\nEquipment Templates, Creation & Components\nPlanned Maintenance Creation, Post & Schedule\nAuto Work Order Creation for Faults\nReports\nBPR & RFI Finalization",attendees:"Facility Management\nFinance (AP)\nIT"});
-  return rows;
-}
-function fmtTime12(t){try{var p=t.split(":");var h=parseInt(p[0]),m=p[1]||"00",ap=h>=12?"PM":"AM";var h12=h>12?h-12:(h===0?12:h);return h12+":"+m+" "+ap;}catch(e){return t;}}
-function fmtDateLong(iso){if(!iso)return "TBD";try{var d=new Date(iso+"T00:00:00");return d.toLocaleDateString("en-GB",{weekday:"long",day:"2-digit",month:"short",year:"numeric"});}catch(e){return iso;}}
-function getBprFrom(){var d=Object.values(agendaRows).map(function(r){return r.date;}).filter(Boolean).sort();return d.length?fmtDateLong(d[0]):"TBD";}
-function getBprUntil(){var d=Object.values(agendaRows).map(function(r){return r.date;}).filter(Boolean).sort();return d.length?fmtDateLong(d[d.length-1]):"TBD";}
-function buildAgendaTableXml(){
-  var rows=buildAgendaRowDefs(),xml="";
-  function xe(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
-  var rPr='<w:rPr><w:rFonts w:ascii="Tahoma" w:hAnsi="Tahoma" w:cs="Tahoma"/><w:sz w:val="22"/><w:szCs w:val="22"/></w:rPr>';
-  var rPrB='<w:rPr><w:rFonts w:ascii="Tahoma" w:hAnsi="Tahoma" w:cs="Tahoma"/><w:b/><w:bCs/><w:sz w:val="22"/><w:szCs w:val="22"/></w:rPr>';
-  function para(t,rp,c){return'<w:p><w:pPr><w:spacing w:before="60" w:after="60"/>'+(c?'<w:jc w:val="center"/>':'')+'</w:pPr><w:r>'+rp+'<w:t xml:space="preserve">'+xe(t)+'</w:t></w:r></w:p>';}
-  function blt(t,rp){return'<w:p><w:pPr><w:pStyle w:val="ListParagraph"/><w:numPr><w:ilvl w:val="0"/><w:numId w:val="1"/></w:numPr><w:spacing w:before="40" w:after="40"/></w:pPr><w:r>'+rp+'<w:t xml:space="preserve">'+xe(t)+'</w:t></w:r></w:p>';}
-  function tc(w,inner,shade){return'<w:tc><w:tcPr><w:tcW w:w="'+w+'" w:type="dxa"/>'+(shade?'<w:shd w:val="clear" w:color="auto" w:fill="F2F2F2"/>':'')+'</w:tcPr>'+inner+'</w:tc>';}
-  rows.forEach(function(row,idx){
-    var rs=agendaRows[row.key]||{},shade=idx%2!==0;
-    var dateStr=rs.date?fmtDateLong(rs.date):"TBD";
-    var timeStr=(rs.timeFrom&&rs.timeTo)?(fmtTime12(rs.timeFrom)+" – "+fmtTime12(rs.timeTo)):"08:00 AM – 03:00 PM";
-    var items=((rs.items!=null)?rs.items:row.items).split("\n").map(function(s){return s.trim();}).filter(Boolean);
-    var atts=((rs.attendees!=null)?rs.attendees:row.attendees).split("\n").map(function(s){return s.trim();}).filter(Boolean);
-    var iXml=items.map(function(t,i){return blt(t,i===0?rPrB:rPr);}).join("");
-    var aXml=atts.map(function(a){return para(a,rPr,false);}).join("");
-    xml+='<w:tr>'+tc(1500,para(dateStr,rPr,true),shade)+tc(1500,para(timeStr,rPr,true),shade)+tc(4860,iXml,shade)+tc(1500,aXml,shade)+'</w:tr>';
-  });
-  return xml;
-}
-function crc32js(data){
-  var crc=0xFFFFFFFF,t=crcTable();
-  for(var i=0;i<data.length;i++) crc=(crc>>>8)^t[(crc^data[i])&255];
-  return(crc^0xFFFFFFFF)>>>0;
-}
-var _crcT=null;
-function crcTable(){
-  if(_crcT) return _crcT;
-  _crcT=new Uint32Array(256);
-  for(var i=0;i<256;i++){var c=i;for(var j=0;j<8;j++)c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1);_crcT[i]=c;}
-  return _crcT;
-}
-async function injectAgendaRows(arrayBuffer){
-  var src=new Uint8Array(arrayBuffer);
-  function r16(b,o){return b[o]|(b[o+1]<<8);}
-  function r32(b,o){return((b[o]|(b[o+1]<<8)|(b[o+2]<<16)|(b[o+3]<<24))>>>0);}
-  function w32(b,o,v){b[o]=v&255;b[o+1]=(v>>8)&255;b[o+2]=(v>>16)&255;b[o+3]=(v>>24)&255;}
-  var eocd=-1;
-  for(var i=src.length-22;i>=0;i--){if(src[i]===0x50&&src[i+1]===0x4B&&src[i+2]===0x05&&src[i+3]===0x06){eocd=i;break;}}
-  var cdOff=r32(src,eocd+16),cdCnt=r16(src,eocd+10),pos=cdOff;
-  var entries=[];
-  for(var i=0;i<cdCnt;i++){
-    if(r32(src,pos)!==0x02014B50)break;
-    var cm=r16(src,pos+10),cs=r32(src,pos+20),lo=r32(src,pos+42);
-    var fnl=r16(src,pos+28),exl=r16(src,pos+30),cml=r16(src,pos+32);
-    var crc=r32(src,pos+16),us=r32(src,pos+24);
-    entries.push({fn:new TextDecoder().decode(src.slice(pos+46,pos+46+fnl)),cm:cm,crc:crc,cs:cs,us:us,lo:lo,fnl:fnl,exl:exl,cml:cml,cdp:pos});
-    pos+=46+fnl+exl+cml;
-  }
-  var docE=null;
-  for(var i=0;i<entries.length;i++){if(entries[i].fn==="word/document.xml"){docE=entries[i];break;}}
-  if(!docE)return arrayBuffer;
-  var lhFnl=r16(src,docE.lo+26),lhExl=r16(src,docE.lo+28),ds=docE.lo+30+lhFnl+lhExl;
-  var xml=new TextDecoder("utf-8").decode(src.slice(ds,ds+docE.cs));
-  var rowsXml=buildAgendaTableXml();
-  var newXml=xml.replace(/(<w:trPr>\s*<w:cantSplit[/]>\s*<w:tblHeader[/]>[\s\S]*?<[/]w:tr>)([\s\S]*)(<[/]w:tbl>)/,function(m,h,_,c){return h+rowsXml+c;});
-  var newBytes=new TextEncoder().encode(newXml);
-  var newCrc=crc32js(newBytes);
-  var parts=[],offsets=[],writeOff=0;
-  for(var ei=0;ei<entries.length;ei++){
-    var e=entries[ei];
-    var lhF=r16(src,e.lo+26),lhX=r16(src,e.lo+28),dss=e.lo+30+lhF+lhX;
-    var lh=new Uint8Array(src.slice(e.lo,dss));
-    offsets.push(writeOff);
-    var fd;
-    if(e.fn==="word/document.xml"){fd=newBytes;w32(lh,14,newCrc);w32(lh,18,newBytes.length);w32(lh,22,newBytes.length);lh[8]=0;lh[9]=0;}
-    else{fd=src.slice(dss,dss+e.cs);}
-    parts.push(lh);writeOff+=lh.length;parts.push(fd);writeOff+=fd.length;
-  }
-  var newCdOff=writeOff;
-  for(var ei=0;ei<entries.length;ei++){
-    var e=entries[ei];
-    var cd=new Uint8Array(src.slice(e.cdp,e.cdp+46+e.fnl+e.exl+e.cml));
-    if(e.fn==="word/document.xml"){w32(cd,16,newCrc);w32(cd,20,newBytes.length);w32(cd,24,newBytes.length);cd[10]=0;cd[11]=0;}
-    w32(cd,42,offsets[ei]);parts.push(cd);writeOff+=cd.length;
-  }
-  var newEocd=new Uint8Array(src.slice(eocd,eocd+22));
-  w32(newEocd,12,writeOff-newCdOff);w32(newEocd,16,newCdOff);parts.push(newEocd);
-  var total=parts.reduce(function(s,p){return s+p.length;},0);
-  var out=new Uint8Array(total),off=0;
-  for(var pi=0;pi<parts.length;pi++){out.set(parts[pi],off);off+=parts[pi].length;}
-  return out.buffer;
-}
 async function genAgenda(){
   loading.agenda=true;re();
   try{
     var buf=await fetchTemplate(TEMPLATES.agenda);
     var team=tr.filter(Boolean).join(", ")||F.con||"Yardi Team";
     F.bf=getBprFrom();F.bu=getBprUntil();
-    var processed=await processDocxSmart(buf,cl(),team,tdShort(),{sessionDate:getBprFrom(),workshopOwner:team});
-    processed=await injectAgendaRows(processed);
+    var step1=await processDocxSmart(buf,cl(),team,tdShort(),{sessionDate:getBprFrom(),workshopOwner:team});
+    var processed=await injectAgendaRows(step1);
     dlFile(processed,"BPR_Agenda_"+cl().replace(/\s+/g,"_")+".docx","application/vnd.openxmlformats-officedocument.wordprocessingml.document");
     done.add(2);
   }catch(e){alert("Error generating agenda: "+e.message);}
@@ -552,9 +453,9 @@ function p3(){
       +'</div></div>';
   }).join("");
   var teamH=tr.map(function(r,i){return'<div class="tr"><input value="'+esc(r)+'" oninput="tr['+i+']=this.value" placeholder="Name — Role"><button class="rm" onclick="rt('+i+')">&#x2715;</button></div>';}).join("");
-  return'<div><div class="pt">BPR session agenda</div><div class="ps">Set dates and times per session. Items and attendees are pre-filled — edit as needed.</div>'
+  return'<div><div class="pt">BPR session agenda</div><div class="ps">Set dates and times. Items and attendees are pre-filled — edit as needed.</div>'
     +'<div class="card"><div class="ct">Yardi team members</div>'+teamH+'<button class="al" onclick="at()">+ Add member</button></div>'
-    +'<div class="info">Only selected modules appear below. Each line in Items of Business becomes a bullet point in the document.</div>'
+    +'<div class="info">Only selected modules appear below. Each line = one bullet point in the document.</div>'
     +rowHtml+ldBtn("agenda","Agenda .docx","genAgenda()")
     +'<div class="brow"><button class="btn bs" onclick="go(2)">← Back</button><button class="btn bp" onclick="go(4)">Continue →</button></div></div>';
 }
@@ -593,6 +494,101 @@ function p6(){
   var stats='<div class="rg">'+[["Client",cl()],["Modules",sm().length+" selected"],["Downloaded",rdy+" / "+ds.length]].map(function(p){return'<div class="sc"><div class="sl">'+p[0]+'</div><div class="sv">'+p[1]+'</div></div>';}).join("")+'</div>';
   var cards=ds.map(function(d){var ok=done.has(d.step),ld=loading[d.key];return'<div class="dc"><div class="dh"><span class="dn">'+d.lb+'</span><span class="bk '+(ok?"bok":"bpn")+'">'+(ok?"✓ Downloaded":"Pending")+'</span></div><div class="dd">'+(ok?"Saved to your Downloads folder.":"Not yet generated.")+'</div><button class="btn '+(ok?"bg":"bp")+'" style="font-size:11px;padding:5px 12px" '+(ld?"disabled":"")+' onclick="'+d.fn+'">'+(ld?'<span class="spin"></span>':(ok?"↓ Re-download":"↓ Download"))+'</button></div>';}).join("");
   return'<div><div class="pt">Review &amp; download</div><div class="ps">All files for '+esc(cl())+'. Each downloads your real template with client data filled in.</div>'+stats+'<div class="dg">'+cards+'</div><div class="brow"><button class="btn bs" onclick="go(5)">← Back</button></div></div>';
+}
+
+
+function buildAgendaRowDefs(){
+  var rows=[],mods=sm();
+  var hasVC=mods.some(function(m){return m.id==="vc";}),hasP2P=mods.some(function(m){return m.id==="p2p";}),hasFA=mods.some(function(m){return m.id==="fa";}),hasWO=mods.some(function(m){return m.id==="wo";}),hasFM=mods.some(function(m){return m.id==="fm";});
+  rows.push({key:"kickoff",label:"Introduction & Kickoff",alwaysOn:true,items:"Introduction and Kickoff with the Project Stakeholder and the Team\nProject plan walkthrough\nYardi platform overview",attendees:"All stakeholders\nProcurement\nFacilities\nFinance (AP)\nIT"});
+  if(hasVC)rows.push({key:"vc",label:"Vendor Cafe",items:"Vendor Markets & Categories\nVendor Invitation & Onboarding Process\nVendor Portal Registration\nVendor Profile Creation, Submission & Approval\nVendor Cafe Dashboard\nPurchase Orders in Vendor Cafe\nInvoicing from Vendor Cafe\nVendor SOA\nBPR & RFI Finalization",attendees:"Vendor Management Team\nProcurement\nFinance (AP)\nIT"});
+  if(hasP2P)rows.push({key:"p2p_day1",label:"Procurement",items:"Purchase Requisition: Data Entry, Workflows/DOA\nPurchase Orders: Dashboards, Data Entry, Workflows/DOA, PO Printing\nGRN Process\nPurchase Order Reports\nProcure to Pay App\nBPR & RFI Finalization",attendees:"Procurement\nFinance (AP)\nIT"});
+  if(hasP2P)rows.push({key:"p2p_day2",label:"Accounts Payable",items:"Vendor Invoicing and Workflow\nPayment Process\nVendor Advances\nPetty Cash Management\nPO Accrual\nPrepaid Expenses\nService Contract Management (AMC)\nProcure to Pay App\nBPR & RFI Finalization",attendees:"Finance (AP)\nProcurement / AMC Team\nIT"});
+  if(hasFA)rows.push({key:"fa",label:"Fixed Asset Manager",items:"Asset Groups & Types\nDepreciation Methods & Conventions\nAsset Creation Workflows\nAsset Lifecycle Transactions: Purchase, Transfer, Disposal, Impairment, Revalue\nAsset Warranty & Barcode\nAsset Auto Code configuration\nBPR & RFI Finalization",attendees:"Finance Manager\nFM Manager\nIT"});
+  if(hasWO)rows.push({key:"wo",label:"Facility Management - Work Orders",items:"Reactive Maintenance: Service Request & Work Order\nWork Order Creation Process\nWO Review by Outsourced Partner\nWO Assignment to Technician\nWO Quotation Process\nWO Financials: Payment to Vendor, Charge to Tenant\nInventory Consumption\nWO Mobile App\nWO SLA Tracking\nWO Technician Time Tracking\nWO Analytics\nBPR & RFI Finalization",attendees:"Facility Management\nFinance (AP)\nIT"});
+  if(hasFM)rows.push({key:"fm",label:"Facility Management - Inspection & PPM",items:"Inspection: Introduction & Overview\nInspection Templates\nInspection Creation, Assignment & Scheduling\nInspector Working Hours and Slots\nMobile App Execution\nInspection Finalization & Reporting\nPPM: Introduction & Overview\nEquipment Templates, Creation & Components\nPlanned Maintenance Creation, Post & Schedule\nAuto Work Order Creation for Faults\nReports\nBPR & RFI Finalization",attendees:"Facility Management\nFinance (AP)\nIT"});
+  return rows;
+}
+function fmtTime12(t){try{var p=t.split(":");var h=parseInt(p[0]),m=p[1]||"00",ap=h>=12?"PM":"AM";var h12=h>12?h-12:(h===0?12:h);return h12+":"+m+" "+ap;}catch(e){return t;}}
+function fmtDateLong(iso){if(!iso)return"TBD";try{var d=new Date(iso+"T00:00:00");return d.toLocaleDateString("en-GB",{weekday:"long",day:"2-digit",month:"short",year:"numeric"});}catch(e){return iso;}}
+function getBprFrom(){var d=Object.values(agendaRows).map(function(r){return r.date;}).filter(Boolean).sort();return d.length?fmtDateLong(d[0]):"TBD";}
+function getBprUntil(){var d=Object.values(agendaRows).map(function(r){return r.date;}).filter(Boolean).sort();return d.length?fmtDateLong(d[d.length-1]):"TBD";}
+function buildAgendaTableXml(){
+  var rows=buildAgendaRowDefs(),xml="";
+  function xe(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+  var rPr='<w:rPr><w:rFonts w:ascii="Tahoma" w:hAnsi="Tahoma" w:cs="Tahoma"/><w:sz w:val="22"/><w:szCs w:val="22"/></w:rPr>';
+  var rPrB='<w:rPr><w:rFonts w:ascii="Tahoma" w:hAnsi="Tahoma" w:cs="Tahoma"/><w:b/><w:bCs/><w:sz w:val="22"/><w:szCs w:val="22"/></w:rPr>';
+  function para(t,rp,c){return'<w:p><w:pPr><w:spacing w:before="60" w:after="60"/>'+(c?'<w:jc w:val="center"/>':'')+'</w:pPr><w:r>'+rp+'<w:t xml:space="preserve">'+xe(t)+'</w:t></w:r></w:p>';}
+  function blt(t,rp){return'<w:p><w:pPr><w:pStyle w:val="ListParagraph"/><w:numPr><w:ilvl w:val="0"/><w:numId w:val="1"/></w:numPr><w:spacing w:before="40" w:after="40"/></w:pPr><w:r>'+rp+'<w:t xml:space="preserve">'+xe(t)+'</w:t></w:r></w:p>';}
+  function tc(w,inner,shade){return'<w:tc><w:tcPr><w:tcW w:w="'+w+'" w:type="dxa"/>'+(shade?'<w:shd w:val="clear" w:color="auto" w:fill="F2F2F2"/>':'')+'</w:tcPr>'+inner+'</w:tc>';}
+  rows.forEach(function(row,idx){
+    var rs=agendaRows[row.key]||{},shade=idx%2!==0;
+    var dateStr=rs.date?fmtDateLong(rs.date):"TBD";
+    var timeStr=(rs.timeFrom&&rs.timeTo)?(fmtTime12(rs.timeFrom)+" – "+fmtTime12(rs.timeTo)):"08:00 AM – 03:00 PM";
+    var items=((rs.items!=null)?rs.items:row.items).split("\n").map(function(s){return s.trim();}).filter(Boolean);
+    var atts=((rs.attendees!=null)?rs.attendees:row.attendees).split("\n").map(function(s){return s.trim();}).filter(Boolean);
+    xml+='<w:tr>'+tc(1500,para(dateStr,rPr,true),shade)+tc(1500,para(timeStr,rPr,true),shade)+tc(4860,items.map(function(t,i){return blt(t,i===0?rPrB:rPr);}).join(""),shade)+tc(1500,atts.map(function(a){return para(a,rPr,false);}).join(""),shade)+'</w:tr>';
+  });
+  return xml;
+}
+function crc32js(data){
+  var crc=0xFFFFFFFF,t=crcT();
+  for(var i=0;i<data.length;i++)crc=(crc>>>8)^t[(crc^data[i])&255];
+  return(crc^0xFFFFFFFF)>>>0;
+}
+var _cT=null;
+function crcT(){if(_cT)return _cT;_cT=new Uint32Array(256);for(var i=0;i<256;i++){var c=i;for(var j=0;j<8;j++)c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1);_cT[i]=c;}return _cT;}
+async function injectAgendaRows(arrayBuffer){
+  var src=new Uint8Array(arrayBuffer);
+  function r16(b,o){return b[o]|(b[o+1]<<8);}
+  function r32(b,o){return((b[o]|(b[o+1]<<8)|(b[o+2]<<16)|(b[o+3]<<24))>>>0);}
+  function w32(b,o,v){b[o]=v&255;b[o+1]=(v>>8)&255;b[o+2]=(v>>16)&255;b[o+3]=(v>>24)&255;}
+  var eocd=-1;
+  for(var i=src.length-22;i>=0;i--){if(src[i]===0x50&&src[i+1]===0x4B&&src[i+2]===0x05&&src[i+3]===0x06){eocd=i;break;}}
+  var cdOff=r32(src,eocd+16),cdCnt=r16(src,eocd+10),pos=cdOff,entries=[];
+  for(var i=0;i<cdCnt;i++){
+    if(r32(src,pos)!==0x02014B50)break;
+    var cm=r16(src,pos+10),crc=r32(src,pos+16),cs=r32(src,pos+20),us=r32(src,pos+24);
+    var fnl=r16(src,pos+28),exl=r16(src,pos+30),cml=r16(src,pos+32),lo=r32(src,pos+42);
+    entries.push({fn:new TextDecoder().decode(src.slice(pos+46,pos+46+fnl)),cm:cm,crc:crc,cs:cs,us:us,lo:lo,fnl:fnl,exl:exl,cml:cml,cdp:pos});
+    pos+=46+fnl+exl+cml;
+  }
+  var docE=null;
+  for(var i=0;i<entries.length;i++){if(entries[i].fn==="word/document.xml"){docE=entries[i];break;}}
+  if(!docE)return arrayBuffer;
+  var lhFnl=r16(src,docE.lo+26),lhExl=r16(src,docE.lo+28),ds=docE.lo+30+lhFnl+lhExl;
+  var xml=new TextDecoder("utf-8").decode(src.slice(ds,ds+docE.cs));
+  var hdrIdx=xml.indexOf("w:tblHeader");
+  if(hdrIdx<0)return arrayBuffer;
+  var headerEnd=xml.indexOf("</w:tr>",hdrIdx)+7;
+  var tableEnd=xml.indexOf("</w:tbl>",headerEnd);
+  if(headerEnd<7||tableEnd<0)return arrayBuffer;
+  var newXml=xml.substring(0,headerEnd)+buildAgendaTableXml()+xml.substring(tableEnd);
+  var newBytes=new TextEncoder().encode(newXml);
+  var newCrc=crc32js(newBytes);
+  var parts=[],offsets=[],writeOff=0;
+  for(var ei=0;ei<entries.length;ei++){
+    var e=entries[ei];
+    var lhF=r16(src,e.lo+26),lhX=r16(src,e.lo+28),dss=e.lo+30+lhF+lhX;
+    var lh=new Uint8Array(src.slice(e.lo,dss));
+    offsets.push(writeOff);
+    var fd;
+    if(e.fn==="word/document.xml"){fd=newBytes;w32(lh,14,newCrc);w32(lh,18,newBytes.length);w32(lh,22,newBytes.length);lh[8]=0;lh[9]=0;}
+    else{fd=src.slice(dss,dss+e.cs);}
+    parts.push(lh);writeOff+=lh.length;parts.push(fd);writeOff+=fd.length;
+  }
+  var newCdOff=writeOff;
+  for(var ei=0;ei<entries.length;ei++){
+    var e=entries[ei];
+    var cd=new Uint8Array(src.slice(e.cdp,e.cdp+46+e.fnl+e.exl+e.cml));
+    if(e.fn==="word/document.xml"){w32(cd,16,newCrc);w32(cd,20,newBytes.length);w32(cd,24,newBytes.length);cd[10]=0;cd[11]=0;}
+    w32(cd,42,offsets[ei]);parts.push(cd);writeOff+=cd.length;
+  }
+  var newEocd=new Uint8Array(src.slice(eocd,eocd+22));
+  w32(newEocd,12,writeOff-newCdOff);w32(newEocd,16,newCdOff);parts.push(newEocd);
+  var total=parts.reduce(function(s,p){return s+p.length;},0),out=new Uint8Array(total),off=0;
+  for(var pi=0;pi<parts.length;pi++){out.set(parts[pi],off);off+=parts[pi].length;}
+  return out.buffer;
 }
 
 re();
