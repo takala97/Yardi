@@ -245,16 +245,13 @@ async function processDocxSmart(arrayBuffer, clientName, consultant, dateStr){
 async function genAgenda(){
   loading.agenda=true;re();
   try{
-    // Ensure agendaRows has defaults for all selected modules
-    var ROWS=buildAgendaRowDefs();
-    ROWS.forEach(function(row){
-      if(!agendaRows[row.key]) agendaRows[row.key]={date:"",timeFrom:"08:00",timeTo:"15:00",items:row.items,attendees:row.attendees};
+    // Ensure defaults
+    buildAgendaRowDefs().forEach(function(row){
+      if(!agendaRows[row.key])agendaRows[row.key]={date:"",timeFrom:"08:00",timeTo:"15:00",items:row.items,attendees:row.attendees};
     });
     var buf=await fetchTemplate(TEMPLATES.agenda);
-    var team=tr.filter(Boolean).join(", ")||F.con||"Yardi Team";
-    F.bf=getBprFrom();F.bu=getBprUntil();
-    var step1=await processDocxSmart(buf,cl(),team,tdShort(),{sessionDate:getBprFrom(),workshopOwner:team});
-    var processed=await injectAgendaRows(step1);
+    // Do EVERYTHING in one ZIP manipulation pass - tokens + row injection together
+    var processed=await buildAgendaDocx(buf);
     dlFile(processed,"BPR_Agenda_"+cl().replace(/\s+/g,"_")+".docx","application/vnd.openxmlformats-officedocument.wordprocessingml.document");
     done.add(2);
   }catch(e){alert("Error generating agenda: "+e.message);}
@@ -543,11 +540,14 @@ function crc32js(data){
 }
 var _cT=null;
 function crcT(){if(_cT)return _cT;_cT=new Uint32Array(256);for(var i=0;i<256;i++){var c=i;for(var j=0;j<8;j++)c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1);_cT[i]=c;}return _cT;}
-async function injectAgendaRows(arrayBuffer){
+async function buildAgendaDocx(arrayBuffer){
+  // Single pass: replace all tokens AND inject rows in one operation
   var src=new Uint8Array(arrayBuffer);
   function r16(b,o){return b[o]|(b[o+1]<<8);}
   function r32(b,o){return((b[o]|(b[o+1]<<8)|(b[o+2]<<16)|(b[o+3]<<24))>>>0);}
   function w32(b,o,v){b[o]=v&255;b[o+1]=(v>>8)&255;b[o+2]=(v>>16)&255;b[o+3]=(v>>24)&255;}
+  function xe(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+
   var eocd=-1;
   for(var i=src.length-22;i>=0;i--){if(src[i]===0x50&&src[i+1]===0x4B&&src[i+2]===0x05&&src[i+3]===0x06){eocd=i;break;}}
   var cdOff=r32(src,eocd+16),cdCnt=r16(src,eocd+10),pos=cdOff,entries=[];
@@ -558,21 +558,39 @@ async function injectAgendaRows(arrayBuffer){
     entries.push({fn:new TextDecoder().decode(src.slice(pos+46,pos+46+fnl)),cm:cm,crc:crc,cs:cs,us:us,lo:lo,fnl:fnl,exl:exl,cml:cml,cdp:pos});
     pos+=46+fnl+exl+cml;
   }
-  var docE=null;
-  for(var i=0;i<entries.length;i++){if(entries[i].fn==="word/document.xml"){docE=entries[i];break;}}
-  if(!docE)return arrayBuffer;
-  var lhFnl=r16(src,docE.lo+26),lhExl=r16(src,docE.lo+28),ds=docE.lo+30+lhFnl+lhExl;
-  var xml=new TextDecoder("utf-8").decode(src.slice(ds,ds+docE.cs));
-  var hdrIdx=xml.indexOf("w:tblHeader");
-  if(hdrIdx<0)return arrayBuffer;
-  var headerEnd=xml.indexOf("</w:tr>",hdrIdx)+7;
-  var tableEnd=xml.indexOf("</w:tbl>",headerEnd);
-  if(headerEnd<7||tableEnd<0)return arrayBuffer;
-  var rowsXml=buildAgendaTableXml();
-  if(!rowsXml) { alert("Debug: no rows generated. Modules: "+JSON.stringify(sm().map(function(m){return m.id;}))); return arrayBuffer; }
-  var newXml=xml.substring(0,headerEnd)+rowsXml+xml.substring(tableEnd);
-  var newBytes=new TextEncoder().encode(newXml);
-  var newCrc=crc32js(newBytes);
+
+  // Build the modified XML entries map
+  var xmlTargets={"word/document.xml":1,"word/header1.xml":1,"word/footer1.xml":1};
+  var team=tr.filter(Boolean).join(", ")||F.con||"Yardi Team";
+  var tokens={"{{CLIENT_NAME}}":cl(),"{{CONSULTANT_NAME}}":team,"{{BPR_FROM}}":getBprFrom(),"{{BPR_UNTIL}}":getBprUntil(),"{{SESSION_DATE}}":getBprFrom(),"{{WORKSHOP_OWNER}}":team};
+  var replacements={};
+
+  for(var ei=0;ei<entries.length;ei++){
+    var e=entries[ei];
+    if(!xmlTargets[e.fn]) continue;
+    var lhF=r16(src,e.lo+26),lhX=r16(src,e.lo+28),dss=e.lo+30+lhF+lhX;
+    var xml=new TextDecoder("utf-8").decode(src.slice(dss,dss+e.cs));
+
+    // Replace tokens (simple string replace - no size constraint needed since we rebuild ZIP)
+    for(var tok in tokens) xml=xml.split(tok).join(xe(tokens[tok]));
+
+    // For document.xml: inject agenda rows into empty table
+    if(e.fn==="word/document.xml"){
+      var hdrIdx=xml.indexOf("w:tblHeader");
+      if(hdrIdx>=0){
+        var headerEnd=xml.indexOf("</w:tr>",hdrIdx)+7;
+        var tableEnd=xml.indexOf("</w:tbl>",headerEnd);
+        if(headerEnd>=7&&tableEnd>=0){
+          xml=xml.substring(0,headerEnd)+buildAgendaTableXml()+xml.substring(tableEnd);
+        }
+      }
+    }
+
+    var newBytes=new TextEncoder().encode(xml);
+    replacements[e.fn]={bytes:newBytes,crc:crc32js(newBytes)};
+  }
+
+  // Rebuild ZIP with all replacements
   var parts=[],offsets=[],writeOff=0;
   for(var ei=0;ei<entries.length;ei++){
     var e=entries[ei];
@@ -580,15 +598,24 @@ async function injectAgendaRows(arrayBuffer){
     var lh=new Uint8Array(src.slice(e.lo,dss));
     offsets.push(writeOff);
     var fd;
-    if(e.fn==="word/document.xml"){fd=newBytes;w32(lh,14,newCrc);w32(lh,18,newBytes.length);w32(lh,22,newBytes.length);lh[8]=0;lh[9]=0;}
-    else{fd=src.slice(dss,dss+e.cs);}
+    if(replacements[e.fn]){
+      var r=replacements[e.fn];
+      fd=r.bytes; w32(lh,14,r.crc); w32(lh,18,r.bytes.length); w32(lh,22,r.bytes.length);
+      lh[8]=0; lh[9]=0;
+    } else {
+      fd=src.slice(dss,dss+e.cs);
+    }
     parts.push(lh);writeOff+=lh.length;parts.push(fd);writeOff+=fd.length;
   }
   var newCdOff=writeOff;
   for(var ei=0;ei<entries.length;ei++){
     var e=entries[ei];
     var cd=new Uint8Array(src.slice(e.cdp,e.cdp+46+e.fnl+e.exl+e.cml));
-    if(e.fn==="word/document.xml"){w32(cd,16,newCrc);w32(cd,20,newBytes.length);w32(cd,24,newBytes.length);cd[10]=0;cd[11]=0;}
+    if(replacements[e.fn]){
+      var r=replacements[e.fn];
+      w32(cd,16,r.crc);w32(cd,20,r.bytes.length);w32(cd,24,r.bytes.length);
+      cd[10]=0;cd[11]=0;
+    }
     w32(cd,42,offsets[ei]);parts.push(cd);writeOff+=cd.length;
   }
   var newEocd=new Uint8Array(src.slice(eocd,eocd+22));
