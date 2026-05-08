@@ -245,6 +245,11 @@ async function processDocxSmart(arrayBuffer, clientName, consultant, dateStr){
 async function genAgenda(){
   loading.agenda=true;re();
   try{
+    // Ensure agendaRows has defaults for all selected modules
+    var ROWS=buildAgendaRowDefs();
+    ROWS.forEach(function(row){
+      if(!agendaRows[row.key]) agendaRows[row.key]={date:"",timeFrom:"08:00",timeTo:"15:00",items:row.items,attendees:row.attendees};
+    });
     var buf=await fetchTemplate(TEMPLATES.agenda);
     var team=tr.filter(Boolean).join(", ")||F.con||"Yardi Team";
     F.bf=getBprFrom();F.bu=getBprUntil();
@@ -563,7 +568,9 @@ async function injectAgendaRows(arrayBuffer){
   var headerEnd=xml.indexOf("</w:tr>",hdrIdx)+7;
   var tableEnd=xml.indexOf("</w:tbl>",headerEnd);
   if(headerEnd<7||tableEnd<0)return arrayBuffer;
-  var newXml=xml.substring(0,headerEnd)+buildAgendaTableXml()+xml.substring(tableEnd);
+  var rowsXml=buildAgendaTableXml();
+  if(!rowsXml) { alert("Debug: no rows generated. Modules: "+JSON.stringify(sm().map(function(m){return m.id;}))); return arrayBuffer; }
+  var newXml=xml.substring(0,headerEnd)+rowsXml+xml.substring(tableEnd);
   var newBytes=new TextEncoder().encode(newXml);
   var newCrc=crc32js(newBytes);
   var parts=[],offsets=[],writeOff=0;
